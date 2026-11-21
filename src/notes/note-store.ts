@@ -22,8 +22,11 @@ export interface NoteStore {
   createNote(): Promise<Note>;
   updateBody(id: string, body: string): Promise<Note>;
   getNote(id: string): Promise<Note | null>;
-  /** 不含回收桶，依最後修改時間由新到舊。 */
-  listNotes(): Promise<NoteListItem[]>;
+  /**
+   * 不含回收桶，依最後修改時間由新到舊。
+   * 有 query 時只列出內文（含標題）包含它的筆記，不分大小寫；空白字串視同沒有 query。
+   */
+  listNotes(query?: string): Promise<NoteListItem[]>;
   /** 離開編輯畫面時呼叫：空白筆記直接刪除（不進回收桶）。 */
   discardIfEmpty(id: string): Promise<void>;
   /** 筆記有任何變動時呼叫 listener；回傳取消訂閱的函式。 */
@@ -114,9 +117,13 @@ export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteSto
       return (await getNote(id))!;
     },
 
-    async listNotes() {
+    async listNotes(query = '') {
+      // instr 而不是 LIKE：使用者輸入的 % 和 _ 照字面比對。SQLite 的 lower() 只轉換 ASCII 字母。
       const rows = await db.all<NoteRow>(
-        'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC',
+        `SELECT * FROM notes
+         WHERE deleted_at IS NULL AND instr(lower(body), lower(?)) > 0
+         ORDER BY updated_at DESC`,
+        [query.trim()],
       );
       return rows.map((row) => ({ id: row.id, updatedAt: row.updated_at, ...splitTitle(row.body) }));
     },

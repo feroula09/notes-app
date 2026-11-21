@@ -20,3 +20,24 @@ export async function pressComposeButton(label: string) {
     await onButtonPressed();
   });
 }
+
+/**
+ * 在 @expo/ui 的 DockedSearchBar 裡輸入文字。
+ *
+ * 用 placeholder 文字（Compose Text 的 text prop）找到搜尋列，再觸發它的 onQueryChange 事件，
+ * 和實機上每打一個字送出的事件相同。
+ */
+export async function typeInComposeSearchBar(placeholder: string, text: string) {
+  const label = await waitFor(() => {
+    const [match] = screen.container.queryAll((node) => node.props.text === placeholder);
+    if (!match) throw new Error(`找不到 placeholder 為「${placeholder}」的 Compose 搜尋列`);
+    return match;
+  });
+  let searchBar = label.parent;
+  while (searchBar && typeof searchBar.props.onQueryChange !== 'function') searchBar = searchBar.parent;
+  if (!searchBar) throw new Error(`「${placeholder}」不在 Compose 搜尋列裡`);
+  const onQueryChange = searchBar.props.onQueryChange;
+  await act(async () => {
+    await onQueryChange({ nativeEvent: { value: text } });
+  });
+}

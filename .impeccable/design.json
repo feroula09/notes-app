@@ -9,6 +9,7 @@
       "onPrimaryContainer": { "role": "primary", "displayName": "深紫容器文字（On Primary Container）", "canonical": "#4F378B", "tonalRamp": ["#21005D", "#381E72", "#4F378B", "#6750A4", "#7F67BE", "#9A82DB", "#D0BCFF", "#EADDFF"] },
       "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#FEF7FF", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
       "surfaceContainer": { "role": "neutral", "displayName": "Surface Container", "canonical": "#F3EDF7", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
+      "surfaceContainerHigh": { "role": "neutral", "displayName": "Surface Container High", "canonical": "#ECE6F0", "note": "DockedSearchBar 預設底色。", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
       "onSurface": { "role": "neutral", "displayName": "On Surface", "canonical": "#1D1B20", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
       "onSurfaceVariant": { "role": "neutral", "displayName": "On Surface Variant", "canonical": "#49454F", "tonalRamp": ["#1D1A22", "#322F37", "#49454F", "#605D66", "#79747E", "#938F99", "#CAC4D0", "#E7E0EC"] },
       "outlineVariant": { "role": "neutral", "displayName": "Outline Variant", "canonical": "#CAC4D0", "tonalRamp": ["#1D1A22", "#322F37", "#49454F", "#605D66", "#79747E", "#938F99", "#CAC4D0", "#E7E0EC"] },
@@ -17,12 +18,13 @@
       "onPrimaryContainer-dark": { "role": "primary", "displayName": "On Primary Container（深色）", "canonical": "#EADDFF" },
       "surface-dark": { "role": "neutral", "displayName": "Surface（深色）", "canonical": "#141218" },
       "surfaceContainer-dark": { "role": "neutral", "displayName": "Surface Container（深色）", "canonical": "#211F26" },
+      "surfaceContainerHigh-dark": { "role": "neutral", "displayName": "Surface Container High（深色）", "canonical": "#2B2930" },
       "onSurface-dark": { "role": "neutral", "displayName": "On Surface（深色）", "canonical": "#E6E0E9" },
       "onSurfaceVariant-dark": { "role": "neutral", "displayName": "On Surface Variant（深色）", "canonical": "#CAC4D0" },
       "outlineVariant-dark": { "role": "neutral", "displayName": "Outline Variant（深色）", "canonical": "#49454F" }
     },
     "typographyMeta": {
-      "titleLarge": { "displayName": "Title Large", "purpose": "列表頁上方列標題「筆記」；Compose TopAppBar 內建字級。單位 sp。" },
+      "titleLarge": { "displayName": "Title Large", "purpose": "目前沒有畫面使用；列表頁原本的「筆記」標題已被搜尋列（#4）取代。單位 sp。" },
       "titleMedium": { "displayName": "Title Medium", "purpose": "列表項目的筆記標題，一行。字重 600 是刻意偏離 M3 的 500（Samsung 中文字體沒有 Medium）。" },
       "bodyLarge": { "displayName": "Body Large", "purpose": "編輯頁內文、空狀態說明。" },
       "bodyMedium": { "displayName": "Body Medium", "purpose": "列表項目內文預覽，最多兩行。" },
@@ -42,12 +44,12 @@
   },
   "components": [
     {
-      "name": "Top App Bar（列表）",
+      "name": "搜尋列（列表）",
       "kind": "nav",
-      "refersTo": "top-app-bar",
-      "description": "Small TopAppBar，標題「筆記」titleLarge；捲動後換成 surfaceContainer。",
-      "html": "<div class=\"ds-topbar\" tabindex=\"0\"><span class=\"ds-topbar-title\">筆記</span></div>",
-      "css": ".ds-topbar { display: flex; align-items: center; height: 64px; padding: 0 16px; background: #FEF7FF; color: #1D1B20; transition: background 0.2s; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-topbar-title { font-size: 22px; line-height: 28px; font-weight: 400; } .ds-topbar:hover, .ds-topbar:focus-visible { background: #F3EDF7; outline: none; }"
+      "refersTo": "search-bar",
+      "description": "Compose DockedSearchBar，leading search 圖示、placeholder「搜尋筆記」，邊打字邊篩選；右邊保留 48dp 給 ⋮ 選單。捲動後背景換成 surfaceContainer。",
+      "html": "<div class=\"ds-searchbar-row\"><div class=\"ds-searchbar\" tabindex=\"0\"><svg width=\"24\" height=\"24\" viewBox=\"0 -960 960 960\" fill=\"currentColor\"><path d=\"M784-120 532-372q-30 24-69 38t-83 14q-109 0-184.5-75.5T120-580q0-109 75.5-184.5T380-840q109 0 184.5 75.5T640-580q0 44-14 83t-38 69l252 252-56 56ZM380-400q75 0 127.5-52.5T560-580q0-75-52.5-127.5T380-760q-75 0-127.5 52.5T200-580q0 75 52.5 127.5T380-400Z\"/></svg><span>搜尋筆記</span></div><div class=\"ds-menu-slot\"></div></div>",
+      "css": ".ds-searchbar-row { display: flex; align-items: center; gap: 4px; padding: 8px 16px; background: #FEF7FF; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-searchbar { flex: 1; display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 16px; border-radius: 28px; background: #ECE6F0; color: #49454F; font-size: 16px; } .ds-searchbar:focus-visible { outline: 2px solid #6750A4; } .ds-menu-slot { width: 48px; height: 48px; }"
     },
     {
       "name": "Top App Bar（編輯）",

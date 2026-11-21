@@ -1,43 +1,14 @@
-import {
-  act,
-  fireEvent,
-  renderRouter,
-  screen,
-  testRouter,
-  waitFor,
-} from 'expo-router/testing-library';
+import { act, fireEvent, screen, testRouter, waitFor } from 'expo-router/testing-library';
 
-import { RootStack } from '@/components/root-stack';
 import type { NoteStore } from '@/notes/note-store';
-import { NoteStoreProvider } from '@/notes/note-store-context';
 import { createTestNoteStore } from '@/notes/testing';
-import { NoteEditor } from '@/screens/note-editor';
-import { NoteList } from '@/screens/note-list';
 import {
   isComposeToggleChecked,
   pressComposeButton,
   toggleComposeButton,
   typeInComposeSearchBar,
 } from '@/test-utils/compose';
-
-/** bodies：開啟 APP 前已經存在的筆記內文。 */
-async function renderApp(...bodies: string[]) {
-  const { store } = await createTestNoteStore(...bodies);
-  await renderAppWithStore(store);
-  return { store };
-}
-
-async function renderAppWithStore(store: NoteStore) {
-  await renderRouter({
-    _layout: () => (
-      <NoteStoreProvider store={store}>
-        <RootStack />
-      </NoteStoreProvider>
-    ),
-    index: NoteList,
-    'notes/[id]': NoteEditor,
-  });
-}
+import { renderApp, renderAppWithStore } from '@/test-utils/render-app';
 
 describe('筆記列表', () => {
   it('第一次使用、沒有筆記時，告訴使用者按「＋」開始寫', async () => {

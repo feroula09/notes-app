@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { RootStack } from '@/components/root-stack';
+import { SnackbarProvider } from '@/components/snackbar';
 import { systemClock } from '@/notes/clock';
 import { openExpoSqliteDatabase } from '@/notes/expo-sqlite-database';
 import { openNoteStore, type NoteStore } from '@/notes/note-store';
@@ -36,7 +37,9 @@ export default function RootLayout() {
     <NoteStoreProvider store={store}>
       <KeyboardProvider>
         <StatusBar style="auto" />
-        <RootStack />
+        <SnackbarProvider>
+          <RootStack />
+        </SnackbarProvider>
       </KeyboardProvider>
     </NoteStoreProvider>
   );

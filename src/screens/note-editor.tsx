@@ -1,6 +1,10 @@
 import ArrowBackIcon from '@expo/material-symbols/arrow_back.xml';
 import KeepIcon from '@expo/material-symbols/keep.xml';
+import MoreVertIcon from '@expo/material-symbols/more_vert.xml';
 import {
+  Text as ComposeText,
+  DropdownMenu,
+  DropdownMenuItem,
   Host,
   Icon,
   IconButton,
@@ -15,6 +19,7 @@ import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useShowSnackbar } from '@/components/snackbar';
 import KeepFillIcon from '@/icons/keep_fill.xml';
 import { useNoteStore } from '@/notes/note-store-context';
 import { typography } from '@/theme/typography';
@@ -30,6 +35,8 @@ export function NoteEditor() {
   const [body, setBody] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [isPinned, setIsPinned] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const showSnackbar = useShowSnackbar();
   const unsaved = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -61,6 +68,24 @@ export function NoteEditor() {
     await store.setPinned([id], checked);
   }
 
+  async function moveToTrash() {
+    setMenuOpen(false);
+    await save();
+    // 空白筆記不進回收桶（ADR 0001）：直接離開，讓 discardIfEmpty 刪掉，也就沒有可以復原的東西。
+    if ((await store.getNote(id))?.body.trim() === '') {
+      router.back();
+      return;
+    }
+    await store.moveToTrash([id]);
+    router.back();
+    const result = await showSnackbar({
+      message: '已移到回收桶',
+      actionLabel: '復原',
+      duration: 'short',
+    });
+    if (result === 'actionPerformed') await store.undoMoveToTrash([id]);
+  }
+
   function onChangeText(text: string) {
     unsaved.current = text;
     clearTimeout(timer.current);
@@ -89,6 +114,20 @@ export function NoteEditor() {
               <IconToggleButton checked={isPinned} onCheckedChange={togglePinned}>
                 <Icon source={isPinned ? KeepFillIcon : KeepIcon} contentDescription="置頂" />
               </IconToggleButton>
+              <DropdownMenu expanded={menuOpen} onDismissRequest={() => setMenuOpen(false)}>
+                <DropdownMenu.Trigger>
+                  <IconButton onClick={() => setMenuOpen(true)}>
+                    <Icon source={MoreVertIcon} contentDescription="更多選項" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Items>
+                  <DropdownMenuItem onClick={moveToTrash}>
+                    <DropdownMenuItem.Text>
+                      <ComposeText>移到回收桶</ComposeText>
+                    </DropdownMenuItem.Text>
+                  </DropdownMenuItem>
+                </DropdownMenu.Items>
+              </DropdownMenu>
             </TopAppBar.Actions>
           )}
         </TopAppBar>

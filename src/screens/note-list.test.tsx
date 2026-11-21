@@ -40,6 +40,17 @@ describe('筆記列表', () => {
     expect(screen.queryByText(/按右下角的「＋」開始寫/)).not.toBeOnTheScreen();
   });
 
+  it('按上方列的返回回到列表，編輯時看得到「已儲存」', async () => {
+    await renderApp();
+
+    await pressComposeButton('新增筆記');
+    await fireEvent.changeText(await screen.findByLabelText('筆記內文'), '買牛奶');
+    expect(await screen.findByText(/^已儲存・\d\d:\d\d$/)).toBeOnTheScreen();
+    await pressComposeButton('返回');
+
+    expect(await screen.findByText('買牛奶')).toBeOnTheScreen();
+  });
+
   it('按「＋」卻什麼都沒寫就返回，列表不會多出空白筆記', async () => {
     const { store } = await renderApp();
 

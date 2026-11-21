@@ -45,3 +45,11 @@ related_targets: []
 ## 尚未決定
 - Material 3 元件要用哪個套件（React Native Paper 或 @expo/ui），照 Expo 的官方建議選。
 - APP 名稱和圖示還沒定，開發時用暫定名稱。
+
+## Direction contract
+- THESIS：沒有風格的 Material 3 工具，像系統內建 APP 一樣。打開就是一張安靜的筆記清單，按一下就能開始寫。拒絕卡片瀑布流、品牌色塊和自創元件。
+- OWN-WORLD：只用 Material You 的色彩角色（surface 底、onSurface／onSurfaceVariant 文字、primaryContainer 的 FAB、outlineVariant 分隔線），不寫死任何 hex。Compose 原生元件：TopAppBar、FAB、IconButton。圖示用 Material Symbols outlined。系統字體，M3 字級，單位 sp。
+- STORY：使用者一眼看到最近改過的筆記，按＋就直接打字；「已儲存・HH:MM」一直跟著鍵盤，按返回後筆記已經在列表最上面。
+- FIRST VIEWPORT：列表頁：上方是 small TopAppBar「筆記」；下面是全寬清單，每列有標題（titleMedium 一行，字重 600）、時間（bodySmall 靠右）、預覽（bodyMedium 兩行），列與列之間用 inset 分隔線；右下角是 FAB（主要動作）。編輯頁：TopAppBar 只有返回，內文輸入框佔滿畫面，底部工具列跟著鍵盤移動，靠右顯示「已儲存・HH:MM」。
+- FORM：canon（類別標準，使用者在方向選擇中選定），seed:d80ca7cfe44a4553。招牌動作原本是列表項目展開成編輯頁的 container transform，但 Reanimated 4.7 的實驗版 shared element transition 在實機上轉場時整個畫面空白，所以先改用 Android 系統原生的畫面轉場（會跟著預測返回預覽上一頁），系統關閉動畫時直接切換。container transform 另開 issue 追蹤。
+- FINISH：unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

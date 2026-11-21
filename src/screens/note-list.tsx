@@ -1,4 +1,13 @@
-import { FloatingActionButton, Host, Icon, useMaterialColors } from '@expo/ui/jetpack-compose';
+import AddIcon from '@expo/material-symbols/add.xml';
+import NoteStackIcon from '@expo/material-symbols/note_stack.xml';
+import {
+  Text as ComposeText,
+  FloatingActionButton,
+  Host,
+  Icon,
+  TopAppBar,
+  useMaterialColors,
+} from '@expo/ui/jetpack-compose';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { NoteListItem } from '@/notes/note-store';
 import { useNoteStore } from '@/notes/note-store-context';
+import { typography } from '@/theme/typography';
 import { formatUpdatedAt } from '@/utils/format-time';
 
 export function NoteList() {
@@ -14,6 +24,8 @@ export function NoteList() {
   const insets = useSafeAreaInsets();
   // loadedAt 用來判斷修改時間要顯示「今天幾點」還是日期。
   const [list, setList] = useState<{ notes: NoteListItem[]; loadedAt: number } | null>(null);
+  // M3：內容捲到上方列底下時，上方列換成 surfaceContainer 色。
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const load = () =>
@@ -33,33 +45,60 @@ export function NoteList() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.surface }]}>
+      <Host matchContents={{ vertical: true }} ignoreSafeAreaKeyboardInsets style={styles.bar}>
+        <TopAppBar colors={{ containerColor: scrolled ? colors.surfaceContainer : colors.surface }}>
+          <TopAppBar.Title>
+            <ComposeText style={{ typography: 'titleLarge' }}>筆記</ComposeText>
+          </TopAppBar.Title>
+        </TopAppBar>
+      </Host>
       {list && (
         <FlatList
           data={list.notes}
           keyExtractor={(note) => note.id}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
+          onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 0)}
+          contentContainerStyle={[
+            { paddingBottom: insets.bottom + 88 },
+            list.notes.length === 0 && styles.emptyContainer,
+          ]}
+          ItemSeparatorComponent={() => (
+            <View style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
+          )}
           ListEmptyComponent={
-            <Text style={[styles.empty, { color: colors.onSurfaceVariant }]}>
-              還沒有筆記。按右下角的「＋」開始寫。
-            </Text>
+            <View style={styles.empty}>
+              <Host matchContents>
+                <Icon source={NoteStackIcon} size={48} tint={colors.onSurfaceVariant} />
+              </Host>
+              <Text
+                style={[typography.bodyLarge, styles.emptyText, { color: colors.onSurfaceVariant }]}
+              >
+                還沒有筆記。按右下角的「＋」開始寫。
+              </Text>
+            </View>
           }
           renderItem={({ item }) => (
             <Pressable
               accessibilityRole="button"
-              android_ripple={{ color: colors.onSurface + '1f' }}
+              android_ripple={{ color: colors.onSurface + '1a' }}
               onPress={() => openNote(item.id)}
               style={styles.item}
             >
               <View style={styles.itemHeader}>
-                <Text numberOfLines={1} style={[styles.title, { color: colors.onSurface }]}>
+                <Text
+                  numberOfLines={1}
+                  style={[typography.titleMedium, styles.title, { color: colors.onSurface }]}
+                >
                   {item.title}
                 </Text>
-                <Text style={[styles.time, { color: colors.onSurfaceVariant }]}>
+                <Text style={[typography.bodySmall, { color: colors.onSurfaceVariant }]}>
                   {formatUpdatedAt(item.updatedAt, list.loadedAt)}
                 </Text>
               </View>
               {item.preview !== '' && (
-                <Text numberOfLines={2} style={[styles.preview, { color: colors.onSurfaceVariant }]}>
+                <Text
+                  numberOfLines={2}
+                  style={[typography.bodyMedium, styles.preview, { color: colors.onSurfaceVariant }]}
+                >
                   {item.preview}
                 </Text>
               )}
@@ -68,10 +107,10 @@ export function NoteList() {
         />
       )}
       <View style={[styles.fab, { bottom: insets.bottom + 16, right: insets.right + 16 }]}>
-        <Host matchContents>
+        <Host matchContents ignoreSafeAreaKeyboardInsets>
           <FloatingActionButton onClick={createNote}>
             <FloatingActionButton.Icon>
-              <Icon source={require('../../assets/icons/add.xml')} contentDescription="新增筆記" />
+              <Icon source={AddIcon} contentDescription="新增筆記" />
             </FloatingActionButton.Icon>
           </FloatingActionButton>
         </Host>
@@ -82,11 +121,14 @@ export function NoteList() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  empty: { fontSize: 16, lineHeight: 24, textAlign: 'center', paddingHorizontal: 32, paddingTop: 96 },
-  item: { paddingHorizontal: 16, paddingVertical: 12, minHeight: 72 },
+  bar: { width: '100%' },
+  emptyContainer: { flexGrow: 1 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
+  emptyText: { textAlign: 'center' },
+  item: { paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, justifyContent: 'center' },
   itemHeader: { flexDirection: 'row', alignItems: 'baseline', gap: 16 },
-  title: { flex: 1, fontSize: 16, lineHeight: 24, fontWeight: '500' },
-  time: { fontSize: 12, lineHeight: 16 },
-  preview: { fontSize: 14, lineHeight: 20, marginTop: 2 },
+  title: { flex: 1 },
+  preview: { marginTop: 4 },
+  divider: { height: 1, marginHorizontal: 16 },
   fab: { position: 'absolute' },
 });

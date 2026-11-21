@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { Clock } from './clock';
 import type { Database, SqlValue } from './database';
+import type { ImageFiles } from './image-files';
 import { openNoteStore } from './note-store';
 
 export function createBetterSqliteDatabase(): Database {
@@ -39,16 +40,36 @@ export function createTestClock(start = Date.UTC(2026, 0, 1, 9, 0)): TestClock {
   };
 }
 
+export type MemoryImageFiles = ImageFiles & {
+  /** 顯示用 URI 對應的檔案是從哪個來源 URI 存進來的；檔案不存在時是 undefined。 */
+  sourceOf(uri: string): string | undefined;
+};
+
+export function createMemoryImageFiles(): MemoryImageFiles {
+  const files = new Map<string, string>();
+  return {
+    async save(sourceUri, fileName) {
+      files.set(fileName, sourceUri);
+    },
+    async delete(fileName) {
+      files.delete(fileName);
+    },
+    uri: (fileName) => `memory://images/${fileName}`,
+    sourceOf: (uri) => files.get(uri.replace('memory://images/', '')),
+  };
+}
+
 /** bodies：先建立好的筆記內文，每則相隔一分鐘（後面的比較新）；notes 依同樣順序回傳。 */
 export async function createTestNoteStore(...bodies: string[]) {
   const db = createBetterSqliteDatabase();
   const clock = createTestClock();
-  const store = await openNoteStore({ db, clock, newId: randomUUID });
+  const files = createMemoryImageFiles();
+  const store = await openNoteStore({ db, clock, newId: randomUUID, files });
   const notes = [];
   for (const body of bodies) {
     const note = await store.createNote();
     notes.push(await store.updateBody(note.id, body));
     clock.advance(60_000);
   }
-  return { store, db, clock, notes };
+  return { store, db, clock, files, notes };
 }

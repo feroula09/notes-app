@@ -7,14 +7,22 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { RootStack } from '@/components/root-stack';
 import { SnackbarProvider } from '@/components/snackbar';
+import { expoImagePicker } from '@/image-picker/expo-image-picker';
+import { ImagePickerContext } from '@/image-picker/image-picker';
 import { systemClock } from '@/notes/clock';
+import { openExpoImageFiles } from '@/notes/expo-image-files';
 import { openExpoSqliteDatabase } from '@/notes/expo-sqlite-database';
 import { openNoteStore, type NoteStore } from '@/notes/note-store';
 import { NoteStoreProvider } from '@/notes/note-store-context';
 
 async function openAppNoteStore() {
   const db = await openExpoSqliteDatabase('notes.db');
-  return openNoteStore({ db, clock: systemClock, newId: Crypto.randomUUID });
+  return openNoteStore({
+    db,
+    clock: systemClock,
+    newId: Crypto.randomUUID,
+    files: openExpoImageFiles(),
+  });
 }
 
 export default function RootLayout() {
@@ -38,7 +46,9 @@ export default function RootLayout() {
       <KeyboardProvider>
         <StatusBar style="auto" />
         <SnackbarProvider>
-          <RootStack />
+          <ImagePickerContext.Provider value={expoImagePicker}>
+            <RootStack />
+          </ImagePickerContext.Provider>
         </SnackbarProvider>
       </KeyboardProvider>
     </NoteStoreProvider>

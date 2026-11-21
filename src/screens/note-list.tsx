@@ -1,4 +1,5 @@
 import AddIcon from '@expo/material-symbols/add.xml';
+import CloseIcon from '@expo/material-symbols/close.xml';
 import NoteStackIcon from '@expo/material-symbols/note_stack.xml';
 import SearchIcon from '@expo/material-symbols/search.xml';
 import SearchOffIcon from '@expo/material-symbols/search_off.xml';
@@ -38,12 +39,18 @@ export function NoteList() {
 
   useEffect(() => {
     const trimmed = query.trim();
+    // 搜尋字串變了之後才回來的舊結果直接丟掉，不蓋掉新的列表。
+    let stale = false;
     const load = () =>
-      store
-        .listNotes(trimmed)
-        .then((notes) => setList({ notes, query: trimmed, loadedAt: Date.now() }));
+      store.listNotes(trimmed).then((notes) => {
+        if (!stale) setList({ notes, query: trimmed, loadedAt: Date.now() });
+      });
     void load();
-    return store.subscribe(load);
+    const unsubscribe = store.subscribe(load);
+    return () => {
+      stale = true;
+      unsubscribe();
+    };
   }, [store, query]);
 
   function openNote(id: string) {
@@ -74,6 +81,10 @@ export function NoteList() {
             <DockedSearchBar.Placeholder>
               <ComposeText>搜尋筆記</ComposeText>
             </DockedSearchBar.Placeholder>
+            {/* 只在有搜尋字串時出現，按下去清空（patches/@expo+ui 加的原生功能）。 */}
+            <DockedSearchBar.TrailingIcon>
+              <Icon source={CloseIcon} contentDescription="清除搜尋" tint={colors.onSurfaceVariant} />
+            </DockedSearchBar.TrailingIcon>
           </DockedSearchBar>
         </Host>
         {/* ⋮ 選單（回收桶、設定）的位置，等 #6、#13 有功能再放按鈕。 */}

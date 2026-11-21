@@ -20,6 +20,12 @@ colors:
   onSurface-dark: "#E6E0E9"
   onSurfaceVariant-dark: "#CAC4D0"
   outlineVariant-dark: "#49454F"
+  inverseSurface: "#322F35"
+  inverseOnSurface: "#F5EFF7"
+  inversePrimary: "#D0BCFF"
+  inverseSurface-dark: "#E6E0E9"
+  inverseOnSurface-dark: "#322F35"
+  inversePrimary-dark: "#6750A4"
 typography:
   titleLarge:
     fontFamily: "system-ui, Roboto, 'Noto Sans TC', sans-serif"
@@ -86,6 +92,15 @@ components:
   note-list-divider:
     backgroundColor: "{colors.outlineVariant}"
     height: "1px"
+  snackbar:
+    backgroundColor: "{colors.inverseSurface}"
+    textColor: "{colors.inverseOnSurface}"
+    typography: "{typography.bodyMedium}"
+  snackbar-action:
+    textColor: "{colors.inversePrimary}"
+  trash-row-footer:
+    textColor: "{colors.onSurfaceVariant}"
+    typography: "{typography.bodySmall}"
   fab:
     backgroundColor: "{colors.primaryContainer}"
     textColor: "{colors.onPrimaryContainer}"
@@ -115,7 +130,7 @@ components:
 
 這套系統是把 Material 3 照規矩做好，不額外加風格。打開 APP 看到的應該像 Android 本來就附的工具，跟 Google Keep、Files、Android「設定」放在一起不會顯得突兀：一張安靜的全寬清單、一個 FAB、一條上方列。沒有品牌色塊、沒有自創元件，也沒有任何裝飾層。介面的個性來自使用者的桌布（Material You 動態配色），APP 本身不帶顏色主張。
 
-密度跟 M3 清單一樣：一列一則筆記，標題一行、預覽兩行、時間靠右，列與列之間用內縮的分隔線。編輯頁只有返回鍵、置頂鍵和一整片輸入區，「已儲存・HH:MM」貼在鍵盤上方，提醒使用者不用自己存檔。所有元件都是 Jetpack Compose 原生元件（透過 `@expo/ui/jetpack-compose`）或照 M3 規格排的 React Native 文字，轉場用 Android 系統的預設動畫。
+密度跟 M3 清單一樣：一列一則筆記，標題一行、預覽兩行、時間靠右，列與列之間用內縮的分隔線。編輯頁只有返回鍵、置頂鍵、⋮ 選單和一整片輸入區，「已儲存・HH:MM」貼在鍵盤上方，提醒使用者不用自己存檔。所有元件都是 Jetpack Compose 原生元件（透過 `@expo/ui/jetpack-compose`）或照 M3 規格排的 React Native 文字，轉場用 Android 系統的預設動畫。
 
 明確拒絕：卡片瀑布流、品牌色塊、自創元件、底部導覽列、側邊抽屜。
 
@@ -123,7 +138,7 @@ components:
 - 顏色只用 Material You 色彩角色，執行期由 `useMaterialColors()` 提供；Android 12 以上跟著桌布變，以下用 M3 baseline 紫色系。
 - 深色模式跟著系統切換，兩種模式都在實機驗證過。
 - 系統字體、M3 字級、單位 sp，跟著系統字體大小縮放（實機測過 130%）。
-- 用色調變化表現層次，不用陰影；唯一的陰影是 Compose FAB 的預設 elevation。
+- 用色調變化表現層次，不用陰影；只有浮在畫面上的 Compose 元件（FAB、⋮ 選單、snackbar）帶著它們預設的 elevation。
 - 圖示一律用 Material Symbols（`@expo/material-symbols/*.xml`）；需要實心版本時才放在 `src/icons/`（見 Do's and Don'ts）。
 - 轉場、預測返回、ripple 都交給系統處理，不自己做。
 
@@ -156,12 +171,12 @@ components:
 **Character:** 完全交給系統字體，跟其他系統 APP 一樣。字級照 M3 的角色命名，Android 上 `fontSize` 就是 sp，會跟著系統字體大小縮放。frontmatter 為了工具相容寫成 px，在 Android 上請一律讀作 sp（字級）和 dp（間距）。
 
 ### Hierarchy
-- **titleLarge**（400，22/28）：目前沒有畫面使用。列表頁原本的上方列標題「筆記」已經被搜尋列（#4）取代。
+- **titleLarge**（400，22/28）：回收桶上方列的標題「回收桶」。這是 Compose `TopAppBar` 內建的字級，透過 `ComposeText style={{ typography: 'titleLarge' }}` 指定。列表頁原本的標題「筆記」已經被搜尋列（#4）取代。
 - **titleMedium**（600，16/24）：列表項目的筆記標題，只顯示一行。
 - **titleSmall**（600，14/20）：列表的區塊標題「已置頂」「其他」。和 titleMedium 一樣用 600 而不是 M3 的 500（Samsung 中文字體沒有 Medium）。
-- **bodyLarge**（400，16/24）：編輯頁內文、空狀態說明文字。
+- **bodyLarge**（400，16/24）：編輯頁內文、回收桶裡筆記的唯讀內文、空狀態說明文字。
 - **bodyMedium**（400，14/20）：列表項目的內文預覽，最多兩行，超過用「…」截斷。
-- **bodySmall**（400，12/16）：列表項目的修改時間（靠右）、編輯頁的「已儲存・HH:MM」。
+- **bodySmall**（400，12/16）：列表項目的修改時間（靠右）、回收桶項目的「N 天後永久刪除」、編輯頁的「已儲存・HH:MM」。
 
 除了 titleLarge 由 Compose 提供，其他五個角色定義在 `src/theme/typography.ts`，React Native 文字一律從那裡取用。
 
@@ -176,7 +191,7 @@ components:
 
 - **左右邊距 16dp**：列表項目、分隔線兩端、編輯內文、「已儲存」工具列都對齊同一條 16dp 線。
 - **列表項目**：上下 12dp、左右 16dp，最小高度 56dp。標題和時間在同一行、對齊基線，中間至少 16dp；預覽在標題下方 4dp。
-- **搜尋列**：左右 16dp、上 8dp（再加上 `insets.top`）、下 8dp；右邊和 ⋮ 的位置（48×48dp）之間 4dp。
+- **搜尋列**：左右 16dp、上 8dp（再加上 `insets.top`）、下 8dp；右邊和 ⋮ 選單按鈕（48×48dp）之間 4dp。
 - **FAB**：距離右邊和底部各 16dp（再加上系統 inset）。清單底部預留 `insets.bottom + 88` 的空間（56dp FAB + 上下各 16dp），讓最後一則筆記可以捲到 FAB 上方。
 - **編輯頁**：輸入區佔滿上方列和工具列之間的空間，上 8dp、下 16dp。工具列最小高度 48dp，內容靠右。工具列下方的空間取 `max(鍵盤高度, insets.bottom)`，透過 `react-native-keyboard-controller` 逐格跟著鍵盤移動。
 - **空狀態**：垂直置中，左右 32dp，圖示和文字之間 16dp。
@@ -186,10 +201,11 @@ components:
 
 ## Elevation & Depth
 
-用色調表現層次，不用陰影。上方列靜止時和畫面同為 `surface`，清單一捲動（`contentOffset.y > 0`）就換成 `surfaceContainer`，這是 M3 上方列的捲動行為；分隔線用 `outlineVariant`，不用陰影或卡片來區分項目。唯一的陰影是 Compose `FloatingActionButton` 內建的 elevation，程式沒有調整。
+用色調表現層次，不用陰影。上方列靜止時和畫面同為 `surface`，清單一捲動（`contentOffset.y > 0`）就換成 `surfaceContainer`，這是 M3 上方列的捲動行為；分隔線用 `outlineVariant`，不用陰影或卡片來區分項目。陰影只來自浮在畫面上的 Compose 元件內建的 elevation（FAB、`DropdownMenu`、snackbar），程式都沒有調整。
 
 ### Shadow Vocabulary
-- **FAB 預設 elevation**（M3 level 3，6dp）：只出現在 FAB，由 Compose 繪製。
+- **FAB 預設 elevation**（M3 level 3，6dp）：FAB，由 Compose 繪製。
+- **選單與 snackbar 的預設 elevation**：⋮ 的 `DropdownMenu` 和 `SnackbarHost` 裡的 snackbar 用 Compose 預設值，程式沒有調整。
 
 ### Named Rules
 **The Tonal Scroll Rule.** 表示「有東西在下面」時改變容器色調（`surface` → `surfaceContainer`），不要加陰影。之後的搜尋列、多選模式上方列也照這個方式做。
@@ -200,20 +216,25 @@ components:
 
 ## Components
 
-所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；回收桶與選單（#6、#13）、附圖（#7）之後會在這套系統上擴充。
+所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；設定（#13）、附圖（#7）之後會在這套系統上擴充。
 
 ### Buttons
 - **FAB（新增筆記）**：Compose `FloatingActionButton`，56dp、16dp 圓角，`primaryContainer` 底色配 `onPrimaryContainer` 的 Material Symbols `add` 圖示，`contentDescription="新增筆記"`。按下後直接建立筆記並進入編輯頁。全 APP 只有這一個主要動作。
 - **IconButton（返回）**：Compose `IconButton` 加 Material Symbols `arrow_back`，`contentDescription="返回"`，放在上方列的 NavigationIcon 位置。
 - **IconToggleButton（置頂）**：編輯頁上方列 Actions 位置的 Compose `IconToggleButton`。沒置頂時是空心的 `keep`、`onSurfaceVariant`；置頂時換成實心的 `keep`（`src/icons/keep_fill.xml`），顏色是預設的 checked 色 `primary`。`contentDescription` 固定是「置頂」，開關狀態由 TalkBack 唸出。筆記載入完才出現。
+- **⋮ 選單**：Compose `IconButton`（Material Symbols `more_vert`，`contentDescription="更多選項"`）加 `DropdownMenu`，選單項目是 `DropdownMenuItem` 的純文字。列表頁的選單目前只有「回收桶」，設定（#13）之後加入；編輯頁的選單有「移到回收桶」。
+- **TextButton（還原）**：回收桶唯讀畫面上方列 Actions 位置的 Compose `TextButton`，文字「還原」。
 
 ### Navigation
-- **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。有文字時右邊出現 `close` 清除鍵（`contentDescription="清除搜尋"`），按下去清空搜尋字串。`@expo/ui` 原本沒有這個 slot，是 `patches/@expo+ui+58.0.29.patch` 加的；因為改了 Kotlin，`package.json` 的 `expo.autolinking.android.buildFromSource` 要包含 `expo-ui`，Gradle 才會從原始碼編譯，而不是用預先編好的 AAR。右邊保留 48×48dp 給 ⋮ 選單（回收桶、設定），#6、#13 有功能時再放按鈕。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
-- **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題；左邊是返回鍵，右邊是置頂鍵。
+- **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。有文字時右邊出現 `close` 清除鍵（`contentDescription="清除搜尋"`），按下去清空搜尋字串。`@expo/ui` 原本沒有這個 slot，是 `patches/@expo+ui+58.0.29.patch` 加的；因為改了 Kotlin，`package.json` 的 `expo.autolinking.android.buildFromSource` 要包含 `expo-ui`，Gradle 才會從原始碼編譯，而不是用預先編好的 AAR。右邊是 ⋮ 選單（見 Buttons）。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
+- **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題；左邊是返回鍵，右邊是置頂鍵和 ⋮ 選單。
+- **上方列（回收桶）**：返回鍵加標題「回收桶」（titleLarge），捲動後底色換成 `surfaceContainer`，和列表頁一樣。
+- **上方列（回收桶裡的筆記）**：返回鍵加右邊的「還原」TextButton。內文是可以選取、不能編輯的 React Native `Text`（bodyLarge、`onSurface`），整頁可以捲動。按「還原」後回到回收桶。
 - **轉場**：native stack 的 `animation: 'default'`，也就是 Android 系統的畫面轉場，返回手勢會預覽上一頁（`predictiveBackGestureEnabled: true`）。系統關閉動畫時（`useReducedMotion()`）改用 `'none'` 直接切換。列表項目展開成編輯頁的 container transform 是原本規劃的招牌轉場，但 Reanimated 的 shared element transition 在實機上整個畫面空白，所以延到 #17。
 
 ### 筆記列表項目
-- **結構**：第一行是標題（titleMedium、`onSurface`、一行）和修改時間（bodySmall、`onSurfaceVariant`、靠右）；下面是預覽（bodyMedium、`onSurfaceVariant`、最多兩行）。沒有內文時不顯示預覽，項目高度縮成一行。
+- **結構**：第一行是標題（titleMedium、`onSurface`、一行）和修改時間（bodySmall、`onSurfaceVariant`、靠右）；下面是預覽（bodyMedium、`onSurfaceVariant`、最多兩行）。沒有內文時不顯示預覽，項目高度縮成一行。列表頁和回收桶共用 `src/components/note-row.tsx` 的 `NoteRow`。
+- **回收桶的項目**：和列表一樣，最下面多一行「N 天後永久刪除」（bodySmall、`onSurfaceVariant`、上 4dp）。N 從移到回收桶起算 30 天，無條件進位，最少 1。最近移入的排在最上面，不分區。
 - **時間格式**：今天顯示 `HH:MM`，今年其他天顯示「11月20日」，更早顯示含年份的日期。
 - **按下**：Android 原生 ripple，`onSurface` 10%。
 - **分隔線**：1dp、`outlineVariant`、左右內縮 16dp。只在同一區的項目之間出現，區塊標題上下不加。
@@ -228,6 +249,12 @@ components:
 ### 空狀態
 - 垂直置中：Material Symbols `note_stack` 圖示（48dp、`onSurfaceVariant`），下方是 bodyLarge 的說明文字「還沒有筆記。按右下角的「＋」開始寫。」，同樣用 `onSurfaceVariant`。
 - 搜尋沒有結果：同樣的版面，圖示換成 `search_off`，說明文字是「找不到含有『…』的筆記」（…是去掉前後空白的搜尋字串）。
+- 回收桶是空的：同樣的版面，圖示是 `delete`，說明文字是「回收桶是空的。移到回收桶的筆記會保留 30 天，之後永久刪除。」
+
+### Snackbar
+- 整個 APP 共用一個 Compose `SnackbarHost`（`src/components/snackbar.tsx` 的 `SnackbarProvider`，放在 root layout），所以換頁之後 snackbar 還在。位置在 FAB 上方（距離底部 `insets.bottom + 88`），不蓋住 FAB。snackbar 消失後 Compose `Host` 仍維持原本的大小，所以外層 View 只在有 snackbar 顯示（含排隊）時接收觸控，其餘時間 `pointerEvents="none"`，不擋住下面的列表。
+- 在編輯頁移到回收桶後回到列表，出現「已移到回收桶」和「復原」按鈕，時間是 Compose 的 `short`（約 4 秒，開啟 TalkBack 等無障礙服務時系統會自動延長）。按「復原」只清除 `deletedAt`，筆記回到原本的位置。
+- 配色用 Compose 預設（`inverseSurface` 底、`inverseOnSurface` 文字、`inversePrimary` 動作按鈕），程式沒有覆寫。
 
 ### 啟動畫面
 - `expo-splash-screen`：淺色底 `#FEF7FF` 配 `#49454F` 的 `note_stack` 圖示，深色底 `#141218` 配 `#CAC4D0` 的圖示，`imageWidth: 76`。這個圖示是暫用的，正式 logo 和 launcher icon 由 #18 處理。splash 底色是固定的 baseline surface，進到 APP 後換成動態配色的 surface，交接時會有輕微的色調和亮度落差；這是已知、可接受的偏差。
@@ -237,7 +264,7 @@ components:
 ### Do:
 - **Do** 所有顏色都透過 `useMaterialColors()` 的色彩角色取用；只有 `app.json` 的 splash 用 baseline 固定色。
 - **Do** React Native 文字從 `src/theme/typography.ts` 取字級；Compose 元件用 Compose 內建的字級名稱。
-- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、DockedSearchBar、FloatingActionButton、IconButton、IconToggleButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
+- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、DockedSearchBar、DropdownMenu、SnackbarHost、FloatingActionButton、IconButton、IconToggleButton、TextButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
 - **Do** 圖示一律用 `@expo/material-symbols/*.xml`，一般 24dp，空狀態插圖 48dp。套件只附空心版本；需要實心版本表示「開啟中」時，用 `npx add-material-symbols --fill <名稱>` 下載到 `src/icons/`（目前只有 `keep_fill.xml`）。
 - **Do** 左右邊距一律 16dp，觸控目標至少 48×48dp。
 - **Do** 用色調變化表示層次（上方列捲動時 `surface` → `surfaceContainer`）。
@@ -251,4 +278,4 @@ components:
 - **Don't** 自創元件或 M3 motion 規格以外的轉場；列表到編輯頁的 container transform（#17）屬於 M3 規格，做好後取代目前的系統轉場。
 - **Don't** 在中文文字上加 `letterSpacing`。
 - **Don't** 在中文標題用 500 字重（Samsung 的中文字體沒有 Medium），改用 600。
-- **Don't** 用陰影區分列表項目或上方列；陰影只有 FAB 預設的那一層。
+- **Don't** 用陰影區分列表項目或上方列；陰影只有 FAB、選單、snackbar 預設的那一層。

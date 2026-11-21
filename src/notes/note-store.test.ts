@@ -166,6 +166,83 @@ describe('筆記庫', () => {
     });
   });
 
+  describe('回收桶', () => {
+    it('移到回收桶（可以一次多則）後，筆記從列表和搜尋結果中消失', async () => {
+      const { store, notes } = await createTestNoteStore('買牛奶', '牛奶糖食譜', '週末爬山');
+
+      await store.moveToTrash([notes[0].id, notes[1].id]);
+
+      expect((await store.listNotes()).map((n) => n.title)).toEqual(['週末爬山']);
+      expect(await store.listNotes('牛奶')).toEqual([]);
+    });
+
+    it('復原剛剛的刪除：筆記回到原本的位置，最後修改時間不變', async () => {
+      const { store, clock, notes } = await createTestNoteStore('最舊', '中間', '最新');
+      await store.moveToTrash([notes[1].id]);
+      clock.advance(60_000);
+
+      await store.undoMoveToTrash([notes[1].id]);
+
+      expect((await store.listNotes()).map((n) => n.title)).toEqual(['最新', '中間', '最舊']);
+      expect(await store.getNote(notes[1].id)).toMatchObject({
+        deletedAt: null,
+        updatedAt: notes[1].updatedAt,
+      });
+    });
+
+    it('從回收桶還原：修改時間設為現在，排到最上面', async () => {
+      const { store, clock, notes } = await createTestNoteStore('最舊', '最新');
+      await store.moveToTrash([notes[0].id]);
+      clock.advance(60_000);
+
+      await store.restoreFromTrash([notes[0].id]);
+
+      expect((await store.listNotes()).map((n) => n.title)).toEqual(['最舊', '最新']);
+      expect(await store.getNote(notes[0].id)).toMatchObject({
+        deletedAt: null,
+        updatedAt: clock.now(),
+      });
+    });
+
+    it('從回收桶還原時保留置頂狀態', async () => {
+      const { store, notes } = await createTestNoteStore('置頂的', '沒置頂的');
+      await store.setPinned([notes[0].id], true);
+      await store.moveToTrash([notes[0].id]);
+
+      await store.restoreFromTrash([notes[0].id]);
+
+      expect(await store.getNote(notes[0].id)).toMatchObject({ pinned: true });
+    });
+
+    it('列出回收桶：只有回收桶裡的筆記，最近移入的在前', async () => {
+      const { store, clock, notes } = await createTestNoteStore('先刪的\n內文', '後刪的', '沒刪的');
+      await store.moveToTrash([notes[0].id]);
+      clock.advance(60_000);
+      await store.moveToTrash([notes[1].id]);
+
+      expect(await store.listTrash()).toEqual([
+        expect.objectContaining({ id: notes[1].id, title: '後刪的' }),
+        expect.objectContaining({ id: notes[0].id, title: '先刪的', preview: '內文' }),
+      ]);
+    });
+
+    const DAY = 24 * 60 * 60 * 1000;
+    it.each([
+      ['剛移入', 0, 30],
+      ['過了一小時', 60 * 60 * 1000, 30],
+      ['過了一天', DAY, 29],
+      ['過了 29 天又一小時', 29 * DAY + 60 * 60 * 1000, 1],
+      ['超過 30 天但還沒永久刪除', 31 * DAY, 1],
+    ])('剩餘天數：%s → %i 天後永久刪除', async (_, elapsed, daysLeft) => {
+      const { store, clock, notes } = await createTestNoteStore('要刪的');
+      await store.moveToTrash([notes[0].id]);
+
+      clock.advance(elapsed);
+
+      expect(await store.listTrash()).toEqual([expect.objectContaining({ daysLeft })]);
+    });
+  });
+
   describe('離開編輯時捨棄空白筆記', () => {
     it.each([
       ['什麼都沒寫', ''],

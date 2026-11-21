@@ -26,6 +26,7 @@
     "typographyMeta": {
       "titleLarge": { "displayName": "Title Large", "purpose": "目前沒有畫面使用；列表頁原本的「筆記」標題已被搜尋列（#4）取代。單位 sp。" },
       "titleMedium": { "displayName": "Title Medium", "purpose": "列表項目的筆記標題，一行。字重 600 是刻意偏離 M3 的 500（Samsung 中文字體沒有 Medium）。" },
+      "titleSmall": { "displayName": "Title Small", "purpose": "列表區塊標題「已置頂」「其他」，primary 色。字重 600（同 titleMedium 的理由）。" },
       "bodyLarge": { "displayName": "Body Large", "purpose": "編輯頁內文、空狀態說明。" },
       "bodyMedium": { "displayName": "Body Medium", "purpose": "列表項目內文預覽，最多兩行。" },
       "bodySmall": { "displayName": "Body Small", "purpose": "列表修改時間、「已儲存・HH:MM」。" }

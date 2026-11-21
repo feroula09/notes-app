@@ -14,13 +14,27 @@ import {
 import { fillMaxWidth } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { NoteListItem } from '@/notes/note-store';
 import { useNoteStore } from '@/notes/note-store-context';
 import { typography } from '@/theme/typography';
 import { formatUpdatedAt } from '@/utils/format-time';
+
+type NoteSection = { title: '已置頂' | '其他' | null; data: NoteListItem[] };
+
+/** 有置頂筆記時分成「已置頂」和「其他」兩區；沒有的話只有一區、不顯示標題。 */
+function toSections(notes: NoteListItem[]): NoteSection[] {
+  const pinned = notes.filter((note) => note.pinned);
+  // 沒有筆記時回傳空陣列，SectionList 才會顯示 ListEmptyComponent。
+  if (pinned.length === 0) return notes.length === 0 ? [] : [{ title: null, data: notes }];
+  const others = notes.filter((note) => !note.pinned);
+  return [
+    { title: '已置頂', data: pinned },
+    ...(others.length > 0 ? [{ title: '其他' as const, data: others }] : []),
+  ];
+}
 
 export function NoteList() {
   const store = useNoteStore();
@@ -91,8 +105,8 @@ export function NoteList() {
         <View style={styles.menuSlot} />
       </View>
       {list && (
-        <FlatList
-          data={list.notes}
+        <SectionList
+          sections={toSections(list.notes)}
           keyExtractor={(note) => note.id}
           keyboardShouldPersistTaps="handled"
           onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 0)}
@@ -100,6 +114,16 @@ export function NoteList() {
             { paddingBottom: insets.bottom + 88 },
             list.notes.length === 0 && styles.emptyContainer,
           ]}
+          renderSectionHeader={({ section }) =>
+            section.title && (
+              <Text
+                accessibilityRole="header"
+                style={[typography.titleSmall, styles.sectionHeader, { color: colors.primary }]}
+              >
+                {section.title}
+              </Text>
+            )
+          }
           ItemSeparatorComponent={() => (
             <View style={[styles.divider, { backgroundColor: colors.outlineVariant }]} />
           )}
@@ -178,6 +202,7 @@ const styles = StyleSheet.create({
   emptyContainer: { flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
   emptyText: { textAlign: 'center' },
+  sectionHeader: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   item: { paddingHorizontal: 16, paddingVertical: 12, minHeight: 56, justifyContent: 'center' },
   itemHeader: { flexDirection: 'row', alignItems: 'baseline', gap: 16 },
   title: { flex: 1 },

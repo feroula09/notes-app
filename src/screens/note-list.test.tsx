@@ -13,7 +13,12 @@ import { NoteStoreProvider } from '@/notes/note-store-context';
 import { createTestNoteStore } from '@/notes/testing';
 import { NoteEditor } from '@/screens/note-editor';
 import { NoteList } from '@/screens/note-list';
-import { pressComposeButton, typeInComposeSearchBar } from '@/test-utils/compose';
+import {
+  isComposeToggleChecked,
+  pressComposeButton,
+  toggleComposeButton,
+  typeInComposeSearchBar,
+} from '@/test-utils/compose';
 
 /** bodies：開啟 APP 前已經存在的筆記內文。 */
 async function renderApp(...bodies: string[]) {
@@ -73,6 +78,35 @@ describe('筆記列表', () => {
 
     expect(await screen.findByText(/按右下角的「＋」開始寫/)).toBeOnTheScreen();
     expect(await store.listNotes()).toEqual([]);
+  });
+
+  describe('置頂', () => {
+    it('在編輯頁置頂後回到列表，筆記出現在「已置頂」區', async () => {
+      await renderApp('買牛奶', '週末爬山');
+      await screen.findByText('買牛奶');
+      // 沒有置頂筆記時不顯示區塊標題。
+      expect(screen.queryByText('已置頂')).not.toBeOnTheScreen();
+      expect(screen.queryByText('其他')).not.toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByText('買牛奶'));
+      await toggleComposeButton('置頂');
+      await testRouter.back('/');
+
+      await screen.findByText('已置頂');
+      const order = screen
+        .getAllByText(/^(已置頂|其他|買牛奶|週末爬山)$/)
+        .map((node) => node.props.children);
+      expect(order).toEqual(['已置頂', '買牛奶', '其他', '週末爬山']);
+    });
+
+    it('打開已置頂的筆記時，置頂鍵顯示為開啟', async () => {
+      const { store } = await renderApp('買牛奶');
+      await store.setPinned([(await store.listNotes())[0].id], true);
+
+      await fireEvent.press(await screen.findByText('買牛奶'));
+
+      expect(await isComposeToggleChecked('置頂')).toBe(true);
+    });
   });
 
   describe('搜尋', () => {

@@ -115,6 +115,57 @@ describe('筆記庫', () => {
     });
   });
 
+  describe('置頂', () => {
+    it('置頂的筆記排在最上方，其餘照最後修改時間由新到舊', async () => {
+      const { store, notes } = await createTestNoteStore('最舊', '中間', '最新');
+      const ids = Object.fromEntries(notes.map((note) => [note.body, note.id]));
+
+      await store.setPinned([ids['最舊']], true);
+
+      expect((await store.listNotes()).map((n) => [n.title, n.pinned])).toEqual([
+        ['最舊', true],
+        ['最新', false],
+        ['中間', false],
+      ]);
+    });
+
+    it('一次置頂多則：置頂的筆記之間也照最後修改時間由新到舊', async () => {
+      const { store, notes } = await createTestNoteStore('一', '二', '三', '四');
+      const ids = Object.fromEntries(notes.map((note) => [note.body, note.id]));
+
+      await store.setPinned([ids['一'], ids['三']], true);
+
+      expect((await store.listNotes()).map((n) => n.title)).toEqual(['三', '一', '四', '二']);
+    });
+
+    it('置頂和取消置頂都不改變最後修改時間', async () => {
+      const { store, clock, notes } = await createTestNoteStore('不要動我的時間');
+      const updatedAt = notes[0].updatedAt;
+      clock.advance(60_000);
+
+      await store.setPinned([notes[0].id], true);
+      expect(await store.getNote(notes[0].id)).toMatchObject({ pinned: true, updatedAt });
+
+      clock.advance(60_000);
+      await store.setPinned([notes[0].id], false);
+      expect(await store.getNote(notes[0].id)).toMatchObject({ pinned: false, updatedAt });
+    });
+
+    it('取消置頂（可以一次多則）後，回到依最後修改時間排序', async () => {
+      const { store, notes } = await createTestNoteStore('舊', '中', '新');
+      const ids = Object.fromEntries(notes.map((note) => [note.body, note.id]));
+      await store.setPinned([ids['舊'], ids['中']], true);
+
+      await store.setPinned([ids['舊'], ids['中']], false);
+
+      expect((await store.listNotes()).map((n) => [n.title, n.pinned])).toEqual([
+        ['新', false],
+        ['中', false],
+        ['舊', false],
+      ]);
+    });
+  });
+
   describe('離開編輯時捨棄空白筆記', () => {
     it.each([
       ['什麼都沒寫', ''],

@@ -39,7 +39,7 @@ export function createTestClock(start = Date.UTC(2026, 0, 1, 9, 0)): TestClock {
   };
 }
 
-/** bodies：先建立好的筆記內文，notes 依同樣順序回傳。 */
+/** bodies：先建立好的筆記內文，每則相隔一分鐘（後面的比較新）；notes 依同樣順序回傳。 */
 export async function createTestNoteStore(...bodies: string[]) {
   const db = createBetterSqliteDatabase();
   const clock = createTestClock();
@@ -48,6 +48,7 @@ export async function createTestNoteStore(...bodies: string[]) {
   for (const body of bodies) {
     const note = await store.createNote();
     notes.push(await store.updateBody(note.id, body));
+    clock.advance(60_000);
   }
   return { store, db, clock, notes };
 }

@@ -1,5 +1,13 @@
 import ArrowBackIcon from '@expo/material-symbols/arrow_back.xml';
-import { Host, Icon, IconButton, TopAppBar, useMaterialColors } from '@expo/ui/jetpack-compose';
+import KeepIcon from '@expo/material-symbols/keep.xml';
+import {
+  Host,
+  Icon,
+  IconButton,
+  IconToggleButton,
+  TopAppBar,
+  useMaterialColors,
+} from '@expo/ui/jetpack-compose';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -7,6 +15,7 @@ import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import KeepFillIcon from '@/icons/keep_fill.xml';
 import { useNoteStore } from '@/notes/note-store-context';
 import { typography } from '@/theme/typography';
 import { formatClock } from '@/utils/format-time';
@@ -20,6 +29,7 @@ export function NoteEditor() {
   const insets = useSafeAreaInsets();
   const [body, setBody] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [isPinned, setIsPinned] = useState(false);
   const unsaved = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -33,6 +43,7 @@ export function NoteEditor() {
     void store.getNote(id).then((note) => {
       setBody(note?.body ?? '');
       setSavedAt(note?.updatedAt ?? null);
+      setIsPinned(note?.pinned ?? false);
     });
   }, [store, id]);
 
@@ -43,6 +54,11 @@ export function NoteEditor() {
     unsaved.current = null;
     const note = await store.updateBody(id, text);
     setSavedAt(note.updatedAt);
+  }
+
+  async function togglePinned(checked: boolean) {
+    setIsPinned(checked);
+    await store.setPinned([id], checked);
   }
 
   function onChangeText(text: string) {
@@ -66,6 +82,15 @@ export function NoteEditor() {
               <Icon source={ArrowBackIcon} contentDescription="返回" />
             </IconButton>
           </TopAppBar.NavigationIcon>
+          {/* 筆記載入完才顯示，不然載入前按下去的狀態會被載入結果蓋掉。 */}
+          {body !== null && (
+            <TopAppBar.Actions>
+              {/* 置頂時是實心圖示加上 M3 的 checked 色；TalkBack 會唸出開關狀態，所以名稱固定是「置頂」。 */}
+              <IconToggleButton checked={isPinned} onCheckedChange={togglePinned}>
+                <Icon source={isPinned ? KeepFillIcon : KeepIcon} contentDescription="置頂" />
+              </IconToggleButton>
+            </TopAppBar.Actions>
+          )}
         </TopAppBar>
       </Host>
       {body !== null && (

@@ -8,6 +8,7 @@ export type Note = {
   updatedAt: number;
   /** 有值代表在回收桶（ADR 0001：刪除只標記）。 */
   deletedAt: number | null;
+  pinned: boolean;
 };
 
 export type NoteListItem = {
@@ -15,6 +16,7 @@ export type NoteListItem = {
   title: string;
   preview: string;
   updatedAt: number;
+  pinned: boolean;
 };
 
 /** 唯一的資料介面：畫面只透過它讀寫筆記。 */
@@ -23,10 +25,12 @@ export interface NoteStore {
   updateBody(id: string, body: string): Promise<Note>;
   getNote(id: string): Promise<Note | null>;
   /**
-   * 不含回收桶，依最後修改時間由新到舊。
+   * 不含回收桶。置頂的筆記在前，置頂和其他各自依最後修改時間由新到舊。
    * 有 query 時只列出內文（含標題）包含它的筆記，不分大小寫；空白字串視同沒有 query。
    */
   listNotes(query?: string): Promise<NoteListItem[]>;
+  /** 置頂或取消置頂，可以一次多則；不改變最後修改時間。 */
+  setPinned(ids: string[], pinned: boolean): Promise<void>;
   /** 離開編輯畫面時呼叫：空白筆記直接刪除（不進回收桶）。 */
   discardIfEmpty(id: string): Promise<void>;
   /** 筆記有任何變動時呼叫 listener；回傳取消訂閱的函式。 */
@@ -41,6 +45,7 @@ type NoteRow = {
   created_at: number;
   updated_at: number;
   deleted_at: number | null;
+  pinned: 0 | 1;
 };
 
 // 第 N 個元素把資料庫從版本 N 升到 N+1。只能往後加，不可修改已發布的 migration。
@@ -52,6 +57,7 @@ const migrations: string[] = [
     updated_at INTEGER NOT NULL,
     deleted_at INTEGER
   );`,
+  `ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 async function migrate(db: Database) {
@@ -70,6 +76,7 @@ function toNote(row: NoteRow): Note {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
+    pinned: row.pinned === 1,
   };
 }
 
@@ -119,13 +126,27 @@ export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteSto
 
     async listNotes(query = '') {
       const rows = await db.all<NoteRow>(
-        'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC',
+        'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY pinned DESC, updated_at DESC',
       );
       // 在 JS 比對而不是 SQL：SQLite 的 lower() 只轉換 ASCII，toLowerCase() 涵蓋全形、重音等字母。
       const needle = query.trim().toLowerCase();
       return rows
         .filter((row) => row.body.toLowerCase().includes(needle))
-        .map((row) => ({ id: row.id, updatedAt: row.updated_at, ...splitTitle(row.body) }));
+        .map((row) => ({
+          id: row.id,
+          updatedAt: row.updated_at,
+          pinned: row.pinned === 1,
+          ...splitTitle(row.body),
+        }));
+    },
+
+    async setPinned(ids, pinned) {
+      const placeholders = ids.map(() => '?').join(', ');
+      await db.run(`UPDATE notes SET pinned = ? WHERE id IN (${placeholders})`, [
+        pinned ? 1 : 0,
+        ...ids,
+      ]);
+      notify();
     },
 
     async discardIfEmpty(id) {

@@ -1,6 +1,14 @@
-import { fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library';
+import {
+  act,
+  fireEvent,
+  renderRouter,
+  screen,
+  testRouter,
+  waitFor,
+} from 'expo-router/testing-library';
 
 import { RootStack } from '@/components/root-stack';
+import type { NoteStore } from '@/notes/note-store';
 import { NoteStoreProvider } from '@/notes/note-store-context';
 import { createTestNoteStore } from '@/notes/testing';
 import { NoteEditor } from '@/screens/note-editor';
@@ -9,11 +17,12 @@ import { pressComposeButton, typeInComposeSearchBar } from '@/test-utils/compose
 
 /** bodies：開啟 APP 前已經存在的筆記內文。 */
 async function renderApp(...bodies: string[]) {
-  const { store } = await createTestNoteStore();
-  for (const body of bodies) {
-    const note = await store.createNote();
-    await store.updateBody(note.id, body);
-  }
+  const { store } = await createTestNoteStore(...bodies);
+  await renderAppWithStore(store);
+  return { store };
+}
+
+async function renderAppWithStore(store: NoteStore) {
   await renderRouter({
     _layout: () => (
       <NoteStoreProvider store={store}>
@@ -23,7 +32,6 @@ async function renderApp(...bodies: string[]) {
     index: NoteList,
     'notes/[id]': NoteEditor,
   });
-  return { store };
 }
 
 describe('筆記列表', () => {
@@ -89,6 +97,30 @@ describe('筆記列表', () => {
 
       expect(await screen.findByText('週末爬山')).toBeOnTheScreen();
       expect(screen.getByText('購物清單')).toBeOnTheScreen();
+    });
+
+    it('打字很快時，比較晚回來的舊搜尋結果不會蓋掉新的', async () => {
+      const { store } = await createTestNoteStore('牛奶', '牛排');
+      // 「牛」的查詢故意晚一點才回來，比「牛排」還晚。
+      let releaseSlowQuery = () => {};
+      const slowStore: NoteStore = {
+        ...store,
+        async listNotes(query) {
+          const notes = await store.listNotes(query);
+          if (query === '牛') await new Promise<void>((resolve) => (releaseSlowQuery = resolve));
+          return notes;
+        },
+      };
+      await renderAppWithStore(slowStore);
+      await screen.findByText('牛奶');
+
+      await typeInComposeSearchBar('搜尋筆記', '牛');
+      await typeInComposeSearchBar('搜尋筆記', '牛排');
+      await waitFor(() => expect(screen.queryByText('牛奶')).not.toBeOnTheScreen());
+      await act(async () => releaseSlowQuery());
+
+      expect(screen.queryByText('牛奶')).not.toBeOnTheScreen();
+      expect(screen.getByText('牛排')).toBeOnTheScreen();
     });
 
     it('沒有結果時說明找不到含有搜尋字串的筆記', async () => {

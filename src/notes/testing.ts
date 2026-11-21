@@ -39,9 +39,15 @@ export function createTestClock(start = Date.UTC(2026, 0, 1, 9, 0)): TestClock {
   };
 }
 
-export async function createTestNoteStore() {
+/** bodies：先建立好的筆記內文，notes 依同樣順序回傳。 */
+export async function createTestNoteStore(...bodies: string[]) {
   const db = createBetterSqliteDatabase();
   const clock = createTestClock();
   const store = await openNoteStore({ db, clock, newId: randomUUID });
-  return { store, db, clock };
+  const notes = [];
+  for (const body of bodies) {
+    const note = await store.createNote();
+    notes.push(await store.updateBody(note.id, body));
+  }
+  return { store, db, clock, notes };
 }

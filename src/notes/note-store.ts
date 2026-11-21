@@ -118,14 +118,14 @@ export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteSto
     },
 
     async listNotes(query = '') {
-      // instr 而不是 LIKE：使用者輸入的 % 和 _ 照字面比對。SQLite 的 lower() 只轉換 ASCII 字母。
       const rows = await db.all<NoteRow>(
-        `SELECT * FROM notes
-         WHERE deleted_at IS NULL AND instr(lower(body), lower(?)) > 0
-         ORDER BY updated_at DESC`,
-        [query.trim()],
+        'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC',
       );
-      return rows.map((row) => ({ id: row.id, updatedAt: row.updated_at, ...splitTitle(row.body) }));
+      // 在 JS 比對而不是 SQL：SQLite 的 lower() 只轉換 ASCII，toLowerCase() 涵蓋全形、重音等字母。
+      const needle = query.trim().toLowerCase();
+      return rows
+        .filter((row) => row.body.toLowerCase().includes(needle))
+        .map((row) => ({ id: row.id, updatedAt: row.updated_at, ...splitTitle(row.body) }));
     },
 
     async discardIfEmpty(id) {

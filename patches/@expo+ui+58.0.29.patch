@@ -1,0 +1,118 @@
+diff --git a/node_modules/@expo/ui/android/src/main/java/expo/modules/ui/DockedSearchBarView.kt b/node_modules/@expo/ui/android/src/main/java/expo/modules/ui/DockedSearchBarView.kt
+index 7eea9bb..a044b8a 100644
+--- a/node_modules/@expo/ui/android/src/main/java/expo/modules/ui/DockedSearchBarView.kt
++++ b/node_modules/@expo/ui/android/src/main/java/expo/modules/ui/DockedSearchBarView.kt
+@@ -2,9 +2,11 @@
+ 
+ package expo.modules.ui
+ 
++import androidx.compose.foundation.text.input.clearText
+ import androidx.compose.foundation.text.input.rememberTextFieldState
+ import androidx.compose.material3.DockedSearchBar
+ import androidx.compose.material3.ExperimentalMaterial3Api
++import androidx.compose.material3.IconButton
+ import androidx.compose.material3.SearchBarDefaults
+ import androidx.compose.material3.rememberSearchBarState
+ import androidx.compose.runtime.Composable
+@@ -46,6 +48,16 @@ fun FunctionalComposableScope.DockedSearchBarContent(
+         },
+         leadingIcon = {
+           Children(UIComposableScope(), filter = { isSlotWithName(it, "leadingIcon") })
++        },
++        // notes-app patch: the trailingIcon slot becomes a clear button, shown only while there is text.
++        trailingIcon = if (textFieldState.text.isNotEmpty() && findChildSlotView(view, "trailingIcon") != null) {
++          {
++            IconButton(onClick = { textFieldState.clearText() }) {
++              Children(UIComposableScope(), filter = { isSlotWithName(it, "trailingIcon") })
++            }
++          }
++        } else {
++          null
+         }
+       )
+     },
+diff --git a/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.d.ts b/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.d.ts
+index ea71bb5..c7142d0 100644
+--- a/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.d.ts
++++ b/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.d.ts
+@@ -19,11 +19,19 @@ type PlaceholderProps = {
+ type LeadingIconProps = {
+     children: React.ReactNode;
+ };
++type TrailingIconProps = {
++    children: React.ReactNode;
++};
+ export declare function DockedSearchBarPlaceholder(props: PlaceholderProps): import("react").JSX.Element;
+ export declare function DockedSearchBarLeadingIcon(props: LeadingIconProps): import("react").JSX.Element;
++/**
++ * Clear button content. Shown only while the query is non-empty; tapping it clears the query (notes-app patch).
++ */
++export declare function DockedSearchBarTrailingIcon(props: TrailingIconProps): import("react").JSX.Element;
+ declare function DockedSearchBar(props: DockedSearchBarProps): import("react").JSX.Element;
+ declare namespace DockedSearchBar {
+     var Placeholder: typeof DockedSearchBarPlaceholder;
+     var LeadingIcon: typeof DockedSearchBarLeadingIcon;
++    var TrailingIcon: typeof DockedSearchBarTrailingIcon;
+ }
+ export { DockedSearchBar };
+diff --git a/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.js b/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.js
+index ca08d84..c42cb8f 100644
+--- a/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.js
++++ b/node_modules/@expo/ui/build/jetpack-compose/DockedSearchBar/index.js
+@@ -15,6 +15,12 @@ export function DockedSearchBarLeadingIcon(props) {
+         children: props.children
+     });
+ }
++export function DockedSearchBarTrailingIcon(props) {
++    return /*#__PURE__*/ _jsx(SlotNativeView, {
++        slotName: "trailingIcon",
++        children: props.children
++    });
++}
+ function transformDockedSearchBarProps(props) {
+     const { modifiers, onQueryChange, ...restProps } = props;
+     return {
+@@ -34,6 +40,7 @@ function DockedSearchBar(props) {
+ }
+ DockedSearchBar.Placeholder = DockedSearchBarPlaceholder;
+ DockedSearchBar.LeadingIcon = DockedSearchBarLeadingIcon;
++DockedSearchBar.TrailingIcon = DockedSearchBarTrailingIcon;
+ export { DockedSearchBar };
+ 
+ //# sourceMappingURL=index.js.map
+diff --git a/node_modules/@expo/ui/src/jetpack-compose/DockedSearchBar/index.tsx b/node_modules/@expo/ui/src/jetpack-compose/DockedSearchBar/index.tsx
+index eff7887..7d767c7 100644
+--- a/node_modules/@expo/ui/src/jetpack-compose/DockedSearchBar/index.tsx
++++ b/node_modules/@expo/ui/src/jetpack-compose/DockedSearchBar/index.tsx
+@@ -28,6 +28,10 @@ type LeadingIconProps = {
+   children: React.ReactNode;
+ };
+ 
++type TrailingIconProps = {
++  children: React.ReactNode;
++};
++
+ type NativeDockedSearchBarProps = Omit<DockedSearchBarProps, 'onQueryChange'> &
+   ViewEvent<'onQueryChange', { value: string }>;
+ 
+@@ -52,6 +56,13 @@ export function DockedSearchBarLeadingIcon(props: LeadingIconProps) {
+   return <SlotNativeView slotName="leadingIcon">{props.children}</SlotNativeView>;
+ }
+ 
++/**
++ * Clear button content. Shown only while the query is non-empty; tapping it clears the query (notes-app patch).
++ */
++export function DockedSearchBarTrailingIcon(props: TrailingIconProps) {
++  return <SlotNativeView slotName="trailingIcon">{props.children}</SlotNativeView>;
++}
++
+ function transformDockedSearchBarProps(props: DockedSearchBarProps): NativeDockedSearchBarProps {
+   const { modifiers, onQueryChange, ...restProps } = props;
+   return {
+@@ -74,5 +85,6 @@ function DockedSearchBar(props: DockedSearchBarProps) {
+ 
+ DockedSearchBar.Placeholder = DockedSearchBarPlaceholder;
+ DockedSearchBar.LeadingIcon = DockedSearchBarLeadingIcon;
++DockedSearchBar.TrailingIcon = DockedSearchBarTrailingIcon;
+ 
+ export { DockedSearchBar };

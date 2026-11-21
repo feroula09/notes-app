@@ -197,7 +197,7 @@ components:
 - **IconButton（返回）**：Compose `IconButton` 加 Material Symbols `arrow_back`，`contentDescription="返回"`，放在上方列的 NavigationIcon 位置。
 
 ### Navigation
-- **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。右邊保留 48×48dp 給 ⋮ 選單（回收桶、設定），#6、#13 有功能時再放按鈕。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
+- **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。有文字時右邊出現 `close` 清除鍵（`contentDescription="清除搜尋"`），按下去清空搜尋字串。`@expo/ui` 原本沒有這個 slot，是 `patches/@expo+ui+58.0.29.patch` 加的；因為改了 Kotlin，`package.json` 的 `expo.autolinking.android.buildFromSource` 要包含 `expo-ui`，Gradle 才會從原始碼編譯，而不是用預先編好的 AAR。右邊保留 48×48dp 給 ⋮ 選單（回收桶、設定），#6、#13 有功能時再放按鈕。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
 - **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題，只有返回鍵。
 - **轉場**：native stack 的 `animation: 'default'`，也就是 Android 系統的畫面轉場，返回手勢會預覽上一頁（`predictiveBackGestureEnabled: true`）。系統關閉動畫時（`useReducedMotion()`）改用 `'none'` 直接切換。列表項目展開成編輯頁的 container transform 是原本規劃的招牌轉場，但 Reanimated 的 shared element transition 在實機上整個畫面空白，所以延到 #17。
 

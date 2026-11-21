@@ -68,6 +68,7 @@ export function TrashList() {
             <NoteRow
               title={item.title}
               preview={item.preview}
+              thumbnailUri={item.thumbnailUri}
               time={formatUpdatedAt(item.updatedAt, list.loadedAt)}
               footer={`${item.daysLeft} 天後永久刪除`}
               onPress={() => router.push({ pathname: '/trash/[id]', params: { id: item.id } })}

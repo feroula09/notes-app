@@ -61,14 +61,15 @@ describe('筆記庫', () => {
     });
   });
 
-  it('重新開啟筆記庫後，筆記還在', async () => {
-    const { store, db, clock } = await createTestNoteStore();
+  it('重新開啟筆記庫後，筆記和附圖都還在', async () => {
+    const { store, db, clock, files } = await createTestNoteStore();
     const note = await store.createNote();
     await store.updateBody(note.id, '不會不見');
+    const { images } = await store.addImages(note.id, ['content://camera/1.jpg']);
 
-    const reopened = await openNoteStore({ db, clock, newId: randomUUID });
+    const reopened = await openNoteStore({ db, clock, newId: randomUUID, files });
 
-    expect(await reopened.getNote(note.id)).toMatchObject({ body: '不會不見' });
+    expect(await reopened.getNote(note.id)).toMatchObject({ body: '不會不見', images });
   });
 
   describe('搜尋', () => {
@@ -243,6 +244,82 @@ describe('筆記庫', () => {
     });
   });
 
+  describe('附圖', () => {
+    it('加入附圖：各存一份檔案，取得筆記時依加入順序附帶附圖', async () => {
+      const { store, files, notes } = await createTestNoteStore('停車位');
+
+      await store.addImages(notes[0].id, ['content://camera/1.jpg']);
+      await store.addImages(notes[0].id, ['content://album/2.jpg', 'content://album/3.jpg']);
+
+      const images = (await store.getNote(notes[0].id))!.images;
+      expect(images.map((image) => files.sourceOf(image.uri))).toEqual([
+        'content://camera/1.jpg',
+        'content://album/2.jpg',
+        'content://album/3.jpg',
+      ]);
+    });
+
+    it('移除附圖：只拿掉那一張，檔案也一起刪除', async () => {
+      const { store, files, notes } = await createTestNoteStore('拍錯了');
+      const [wrong, kept] = (
+        await store.addImages(notes[0].id, ['content://album/wrong.jpg', 'content://album/kept.jpg'])
+      ).images;
+
+      await store.removeImage(notes[0].id, wrong.id);
+
+      expect((await store.getNote(notes[0].id))!.images).toEqual([kept]);
+      expect(files.sourceOf(wrong.uri)).toBeUndefined();
+      expect(files.sourceOf(kept.uri)).toBe('content://album/kept.jpg');
+    });
+
+    it('列表上有附圖的筆記帶著第一張的縮圖；沒有附圖的沒有縮圖', async () => {
+      const { store, notes } = await createTestNoteStore('沒有圖', '購物\n有圖');
+      const [first] = (
+        await store.addImages(notes[1].id, ['content://album/1.jpg', 'content://album/2.jpg'])
+      ).images;
+
+      expect(await store.listNotes()).toEqual([
+        expect.objectContaining({ title: '購物', preview: '有圖', thumbnailUri: first.uri }),
+        expect.objectContaining({ title: '沒有圖', thumbnailUri: null }),
+      ]);
+    });
+
+    it.each([
+      ['完全沒有文字', ''],
+      ['只有空白和換行', ' \n \n'],
+    ])('只有附圖的筆記（%s）標題顯示「（圖片）」', async (_, body) => {
+      const { store } = await createTestNoteStore();
+      const note = await store.createNote();
+      await store.updateBody(note.id, body);
+      await store.addImages(note.id, ['content://camera/1.jpg']);
+
+      expect(await store.listNotes()).toEqual([
+        expect.objectContaining({ title: '（圖片）', preview: '' }),
+      ]);
+    });
+
+    it('有文字的筆記照樣用第一行當標題，即使有附圖', async () => {
+      const { store, notes } = await createTestNoteStore('\n第二行才有字');
+      await store.addImages(notes[0].id, ['content://camera/1.jpg']);
+
+      expect(await store.listNotes()).toEqual([
+        expect.objectContaining({ title: '', preview: '第二行才有字' }),
+      ]);
+    });
+
+    it('加入或移除附圖都會把最後修改時間設為現在', async () => {
+      const { store, clock, notes } = await createTestNoteStore('收據');
+
+      clock.advance(60_000);
+      const [image] = (await store.addImages(notes[0].id, ['content://camera/1.jpg'])).images;
+      expect(await store.getNote(notes[0].id)).toMatchObject({ updatedAt: clock.now() });
+
+      clock.advance(60_000);
+      await store.removeImage(notes[0].id, image.id);
+      expect(await store.getNote(notes[0].id)).toMatchObject({ updatedAt: clock.now() });
+    });
+  });
+
   describe('離開編輯時捨棄空白筆記', () => {
     it.each([
       ['什麼都沒寫', ''],
@@ -266,6 +343,27 @@ describe('筆記庫', () => {
       await store.discardIfEmpty(note.id);
 
       expect((await store.listNotes()).map((n) => n.id)).toEqual([note.id]);
+    });
+
+    it('只有附圖、沒有文字的筆記不算空白，照樣保留', async () => {
+      const { store } = await createTestNoteStore();
+      const note = await store.createNote();
+      await store.addImages(note.id, ['content://camera/whiteboard.jpg']);
+
+      await store.discardIfEmpty(note.id);
+
+      expect((await store.listNotes()).map((n) => n.id)).toEqual([note.id]);
+    });
+
+    it('附圖全部移除、也沒有文字，就變回空白筆記', async () => {
+      const { store } = await createTestNoteStore();
+      const note = await store.createNote();
+      const [image] = (await store.addImages(note.id, ['content://camera/1.jpg'])).images;
+      await store.removeImage(note.id, image.id);
+
+      await store.discardIfEmpty(note.id);
+
+      expect(await store.getNote(note.id)).toBeNull();
     });
   });
 });

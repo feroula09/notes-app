@@ -114,7 +114,7 @@ components:
   save-status-toolbar:
     textColor: "{colors.onSurfaceVariant}"
     typography: "{typography.bodySmall}"
-    padding: "0 16px"
+    padding: "0 16px 0 4px"
     height: "48px"
   empty-state:
     textColor: "{colors.onSurfaceVariant}"
@@ -193,7 +193,7 @@ components:
 - **列表項目**：上下 12dp、左右 16dp，最小高度 56dp。標題和時間在同一行、對齊基線，中間至少 16dp；預覽在標題下方 4dp。
 - **搜尋列**：左右 16dp、上 8dp（再加上 `insets.top`）、下 8dp；右邊和 ⋮ 選單按鈕（48×48dp）之間 4dp。
 - **FAB**：距離右邊和底部各 16dp（再加上系統 inset）。清單底部預留 `insets.bottom + 88` 的空間（56dp FAB + 上下各 16dp），讓最後一則筆記可以捲到 FAB 上方。
-- **編輯頁**：輸入區佔滿上方列和工具列之間的空間，上 8dp、下 16dp。工具列最小高度 48dp，內容靠右。工具列下方的空間取 `max(鍵盤高度, insets.bottom)`，透過 `react-native-keyboard-controller` 逐格跟著鍵盤移動。
+- **編輯頁**：輸入區佔滿上方列和附件區（或工具列）之間的空間，上 8dp、下 16dp。工具列最小高度 48dp，左邊是拍照、從相簿選圖兩個 IconButton（左邊距 4dp，加上按鈕本身的留白，圖示對齊 16dp 線），右邊是「已儲存」。工具列下方的空間取 `max(鍵盤高度, insets.bottom)`，透過 `react-native-keyboard-controller` 逐格跟著鍵盤移動。
 - **空狀態**：垂直置中，左右 32dp，圖示和文字之間 16dp。
 - **觸控目標**至少 48×48dp（IconButton、IconToggleButton、FAB、列表項目都符合）。
 
@@ -234,6 +234,7 @@ components:
 
 ### 筆記列表項目
 - **結構**：第一行是標題（titleMedium、`onSurface`、一行）和修改時間（bodySmall、`onSurfaceVariant`、靠右）；下面是預覽（bodyMedium、`onSurfaceVariant`、最多兩行）。沒有內文時不顯示預覽，項目高度縮成一行。列表頁和回收桶共用 `src/components/note-row.tsx` 的 `NoteRow`。
+- **縮圖**：有附圖的筆記在最右邊顯示第一張附圖，56×56dp、方角、`cover` 裁切，和文字之間 16dp，項目內容垂直置中。只有附圖、沒有文字的筆記標題是「（圖片）」。
 - **回收桶的項目**：和列表一樣，最下面多一行「N 天後永久刪除」（bodySmall、`onSurfaceVariant`、上 4dp）。N 從移到回收桶起算 30 天，無條件進位，最少 1。最近移入的排在最上面，不分區。
 - **時間格式**：今天顯示 `HH:MM`，今年其他天顯示「11月20日」，更早顯示含年份的日期。
 - **按下**：Android 原生 ripple，`onSurface` 10%。
@@ -244,7 +245,13 @@ components:
 - **編輯內文**：React Native `TextInput`（multiline），沒有邊框也沒有底色，就是一整片 `surface`。文字 bodyLarge、`onSurface`；placeholder「筆記」用 `onSurfaceVariant`；游標用 `primary`，選取反白是 `primary` 40%。空白筆記進入時自動聚焦。
 
 ### 「已儲存」工具列
-- 固定在鍵盤上方、跟著鍵盤移動，內容靠右：「已儲存・HH:MM」（bodySmall、`onSurfaceVariant`）。沒有「儲存」按鈕，打字停 500ms 後自動儲存。之後的拍照、從相簿選圖按鈕會加在這條工具列的左側。
+- 固定在鍵盤上方、跟著鍵盤移動。左邊是 Compose `IconButton`：Material Symbols `photo_camera`（`contentDescription="拍照"`）和 `photo_library`（`contentDescription="從相簿選圖"`，可以多選）；右邊是「已儲存・HH:MM」（bodySmall、`onSurfaceVariant`）。沒有「儲存」按鈕，打字停 500ms 後自動儲存。
+
+### 附件區（編輯頁）
+- 有附圖時出現在輸入區和工具列之間：橫向捲動的一排縮圖，96×96dp、方角、`cover` 裁切，`surfaceContainerHigh` 當載入前的底色，縮圖間距 8dp、上下 8dp、左右 16dp。每張右上角疊一個 Compose `FilledTonalIconButton`（Material Symbols `close`，`contentDescription="移除第 N 張附圖"`），按下立即移除，沒有確認。
+
+### 權限說明對話框
+- 相機或相簿權限被拒絕時，顯示 Compose `AlertDialog`：標題「需要相機權限」或「需要相片權限」，內文說明要到系統設定開啟；確認鈕是 `TextButton`「前往設定」（打開這個 APP 的系統設定頁），取消鈕是「取消」。
 
 ### 空狀態
 - 垂直置中：Material Symbols `note_stack` 圖示（48dp、`onSurfaceVariant`），下方是 bodyLarge 的說明文字「還沒有筆記。按右下角的「＋」開始寫。」，同樣用 `onSurfaceVariant`。

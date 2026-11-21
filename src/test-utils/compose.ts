@@ -30,6 +30,17 @@ export async function pressComposeButton(label: string) {
 }
 
 /**
+ * 按下 Compose 按鈕，但和實機的原生事件一樣只觸發、不等處理函式跑完：
+ * 用來測試處理函式還在跑的時候使用者又做了別的事（例如馬上返回）。
+ */
+export async function pressComposeButtonWithoutWaiting(label: string) {
+  const { onButtonPressed } = (await findComposeControl(label, 'onButtonPressed')).props;
+  await act(async () => {
+    void onButtonPressed();
+  });
+}
+
+/**
  * 在 @expo/ui 的 DockedSearchBar 裡輸入文字。
  *
  * 用 placeholder 文字（Compose Text 的 text prop）找到搜尋列，再觸發它的 onQueryChange 事件，
@@ -73,4 +84,18 @@ export async function toggleComposeButton(label: string) {
 /** Compose toggle 按鈕目前是否為開啟（TalkBack 唸出的開關狀態）。 */
 export async function isComposeToggleChecked(label: string): Promise<boolean> {
   return (await findComposeControl(label, 'onCheckedChange')).props.checked;
+}
+
+/** 畫面上文字為 text 的 Compose Text（例如對話框的標題）；沒有時是 null。 */
+export function queryComposeText(text: string) {
+  return screen.container.queryAll((node) => node.props.text === text)[0] ?? null;
+}
+
+/** 等到畫面上出現文字為 text 的 Compose Text。 */
+export function findComposeText(text: string) {
+  return waitFor(() => {
+    const match = queryComposeText(text);
+    if (!match) throw new Error(`找不到文字為「${text}」的 Compose Text`);
+    return match;
+  });
 }

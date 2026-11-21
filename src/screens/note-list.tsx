@@ -163,6 +163,7 @@ export function NoteList() {
             <NoteRow
               title={item.title}
               preview={item.preview}
+              thumbnailUri={item.thumbnailUri}
               time={formatUpdatedAt(item.updatedAt, list.loadedAt)}
               onPress={() => openNote(item.id)}
             />

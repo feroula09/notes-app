@@ -1,5 +1,6 @@
 import type { Clock } from './clock';
 import type { Database } from './database';
+import type { ImageFiles } from './image-files';
 
 export type Note = {
   id: string;
@@ -9,6 +10,14 @@ export type Note = {
   /** 有值代表在回收桶（ADR 0001：刪除只標記）。 */
   deletedAt: number | null;
   pinned: boolean;
+  /** 依加入順序。 */
+  images: NoteImage[];
+};
+
+export type NoteImage = {
+  id: string;
+  /** 可以直接拿來顯示的 URI。 */
+  uri: string;
 };
 
 export type NoteListItem = {
@@ -17,12 +26,19 @@ export type NoteListItem = {
   preview: string;
   updatedAt: number;
   pinned: boolean;
+  /** 第一張附圖；沒有附圖時是 null。 */
+  thumbnailUri: string | null;
 };
 
 export type TrashListItem = NoteListItem & {
   /** 再過幾天會永久刪除，最少 1（還沒清除前都是「即將」刪除）。 */
   daysLeft: number;
 };
+
+/** 空白筆記：沒有任何文字（空白和換行不算），也沒有任何附圖。 */
+export function isEmptyNote(note: Note) {
+  return note.body.trim() === '' && note.images.length === 0;
+}
 
 /** 回收桶裡的筆記保留幾天。 */
 export const TRASH_RETENTION_DAYS = 30;
@@ -33,6 +49,10 @@ export interface NoteStore {
   createNote(): Promise<Note>;
   updateBody(id: string, body: string): Promise<Note>;
   getNote(id: string): Promise<Note | null>;
+  /** 把圖片複製、壓縮後加到附圖最後面；會改變最後修改時間。 */
+  addImages(noteId: string, sourceUris: string[]): Promise<Note>;
+  /** 移除一張附圖並刪除它的檔案；會改變最後修改時間。 */
+  removeImage(noteId: string, imageId: string): Promise<Note>;
   /**
    * 不含回收桶。置頂的筆記在前，置頂和其他各自依最後修改時間由新到舊。
    * 有 query 時只列出內文（含標題）包含它的筆記，不分大小寫；空白字串視同沒有 query。
@@ -54,7 +74,7 @@ export interface NoteStore {
   subscribe(listener: () => void): () => void;
 }
 
-type Deps = { db: Database; clock: Clock; newId: () => string };
+type Deps = { db: Database; clock: Clock; newId: () => string; files: ImageFiles };
 
 type NoteRow = {
   id: string;
@@ -64,6 +84,15 @@ type NoteRow = {
   deleted_at: number | null;
   pinned: 0 | 1;
 };
+
+type ImageRow = { id: string; file_name: string };
+
+/** 列表查詢的一列：筆記加上第一張附圖的檔名。 */
+type ListRow = NoteRow & { first_image: string | null };
+
+const LIST_COLUMNS = `notes.*, (
+  SELECT file_name FROM images WHERE note_id = notes.id ORDER BY position LIMIT 1
+) AS first_image`;
 
 // 第 N 個元素把資料庫從版本 N 升到 N+1。只能往後加，不可修改已發布的 migration。
 const migrations: string[] = [
@@ -75,6 +104,14 @@ const migrations: string[] = [
     deleted_at INTEGER
   );`,
   `ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;`,
+  `CREATE TABLE images (
+    id TEXT PRIMARY KEY NOT NULL,
+    note_id TEXT NOT NULL REFERENCES notes (id),
+    file_name TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX images_note_id ON images (note_id, position);`,
 ];
 
 async function migrate(db: Database) {
@@ -86,7 +123,7 @@ async function migrate(db: Database) {
   }
 }
 
-function toNote(row: NoteRow): Note {
+function toNote(row: NoteRow, images: NoteImage[]): Note {
   return {
     id: row.id,
     body: row.body,
@@ -94,6 +131,7 @@ function toNote(row: NoteRow): Note {
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
     pinned: row.pinned === 1,
+    images,
   };
 }
 
@@ -102,28 +140,38 @@ function placeholders(ids: string[]) {
   return ids.map(() => '?').join(', ');
 }
 
-/** 標題是內文第一行；預覽是標題之後的內文。 */
-function splitTitle(body: string): { title: string; preview: string } {
+/** 標題是內文第一行；預覽是標題之後的內文。只有附圖、沒有文字的筆記標題是「（圖片）」。 */
+function splitTitle(body: string, hasImages: boolean): { title: string; preview: string } {
+  if (hasImages && body.trim() === '') return { title: '（圖片）', preview: '' };
   const newline = body.indexOf('\n');
   if (newline === -1) return { title: body.trim(), preview: '' };
   return { title: body.slice(0, newline).trim(), preview: body.slice(newline + 1).trim() };
 }
 
-function toListItem(row: NoteRow): NoteListItem {
+function toListItem(row: ListRow, files: ImageFiles): NoteListItem {
   return {
     id: row.id,
     updatedAt: row.updated_at,
     pinned: row.pinned === 1,
-    ...splitTitle(row.body),
+    thumbnailUri: row.first_image === null ? null : files.uri(row.first_image),
+    ...splitTitle(row.body, row.first_image !== null),
   };
 }
 
-export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteStore> {
+export async function openNoteStore({ db, clock, newId, files }: Deps): Promise<NoteStore> {
   await migrate(db);
 
   async function getNote(id: string) {
     const row = await db.get<NoteRow>('SELECT * FROM notes WHERE id = ?', [id]);
-    return row ? toNote(row) : null;
+    if (!row) return null;
+    const images = await db.all<ImageRow>(
+      'SELECT id, file_name FROM images WHERE note_id = ? ORDER BY position',
+      [id],
+    );
+    return toNote(
+      row,
+      images.map((image) => ({ id: image.id, uri: files.uri(image.file_name) })),
+    );
   }
 
   const listeners = new Set<() => void>();
@@ -155,15 +203,51 @@ export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteSto
       return (await getNote(id))!;
     },
 
+    async addImages(noteId, sourceUris) {
+      const row = await db.get<{ last: number | null }>(
+        'SELECT MAX(position) AS last FROM images WHERE note_id = ?',
+        [noteId],
+      );
+      let position = row?.last ?? -1;
+      const now = clock.now();
+      for (const sourceUri of sourceUris) {
+        const id = newId();
+        const fileName = `${id}.jpg`;
+        await files.save(sourceUri, fileName);
+        position += 1;
+        await db.run(
+          'INSERT INTO images (id, note_id, file_name, position, created_at) VALUES (?, ?, ?, ?, ?)',
+          [id, noteId, fileName, position, now],
+        );
+      }
+      await db.run('UPDATE notes SET updated_at = ? WHERE id = ?', [now, noteId]);
+      notify();
+      return (await getNote(noteId))!;
+    },
+
+    async removeImage(noteId, imageId) {
+      const image = await db.get<ImageRow>(
+        'SELECT id, file_name FROM images WHERE id = ? AND note_id = ?',
+        [imageId, noteId],
+      );
+      if (image) {
+        await db.run('DELETE FROM images WHERE id = ?', [imageId]);
+        await files.delete(image.file_name);
+      }
+      await db.run('UPDATE notes SET updated_at = ? WHERE id = ?', [clock.now(), noteId]);
+      notify();
+      return (await getNote(noteId))!;
+    },
+
     async listNotes(query = '') {
-      const rows = await db.all<NoteRow>(
-        'SELECT * FROM notes WHERE deleted_at IS NULL ORDER BY pinned DESC, updated_at DESC',
+      const rows = await db.all<ListRow>(
+        `SELECT ${LIST_COLUMNS} FROM notes WHERE deleted_at IS NULL ORDER BY pinned DESC, updated_at DESC`,
       );
       // 在 JS 比對而不是 SQL：SQLite 的 lower() 只轉換 ASCII，toLowerCase() 涵蓋全形、重音等字母。
       const needle = query.trim().toLowerCase();
       return rows
         .filter((row) => row.body.toLowerCase().includes(needle))
-        .map(toListItem);
+        .map((row) => toListItem(row, files));
     },
 
     async setPinned(ids, pinned) {
@@ -196,19 +280,22 @@ export async function openNoteStore({ db, clock, newId }: Deps): Promise<NoteSto
     },
 
     async listTrash() {
-      const rows = await db.all<NoteRow & { deleted_at: number }>(
-        'SELECT * FROM notes WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC',
+      const rows = await db.all<ListRow & { deleted_at: number }>(
+        `SELECT ${LIST_COLUMNS} FROM notes WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`,
       );
       const now = clock.now();
       return rows.map((row) => {
         const purgeAt = row.deleted_at + TRASH_RETENTION_DAYS * DAY_MS;
-        return { ...toListItem(row), daysLeft: Math.max(1, Math.ceil((purgeAt - now) / DAY_MS)) };
+        return {
+          ...toListItem(row, files),
+          daysLeft: Math.max(1, Math.ceil((purgeAt - now) / DAY_MS)),
+        };
       });
     },
 
     async discardIfEmpty(id) {
       const note = await getNote(id);
-      if (note && note.body.trim() === '') {
+      if (note && isEmptyNote(note)) {
         await db.run('DELETE FROM notes WHERE id = ?', [id]);
         notify();
       }

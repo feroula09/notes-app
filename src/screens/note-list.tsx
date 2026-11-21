@@ -1,13 +1,16 @@
 import AddIcon from '@expo/material-symbols/add.xml';
 import NoteStackIcon from '@expo/material-symbols/note_stack.xml';
+import SearchIcon from '@expo/material-symbols/search.xml';
+import SearchOffIcon from '@expo/material-symbols/search_off.xml';
 import {
   Text as ComposeText,
+  DockedSearchBar,
   FloatingActionButton,
   Host,
   Icon,
-  TopAppBar,
   useMaterialColors,
 } from '@expo/ui/jetpack-compose';
+import { fillMaxWidth } from '@expo/ui/jetpack-compose/modifiers';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -22,17 +25,26 @@ export function NoteList() {
   const store = useNoteStore();
   const colors = useMaterialColors();
   const insets = useSafeAreaInsets();
-  // loadedAt 用來判斷修改時間要顯示「今天幾點」還是日期。
-  const [list, setList] = useState<{ notes: NoteListItem[]; loadedAt: number } | null>(null);
+  const [query, setQuery] = useState('');
+  // loadedAt 用來判斷修改時間要顯示「今天幾點」還是日期；
+  // query 是這份列表的搜尋字串，打字時列表還沒更新前，空狀態的說明不會對不上。
+  const [list, setList] = useState<{
+    notes: NoteListItem[];
+    query: string;
+    loadedAt: number;
+  } | null>(null);
   // M3：內容捲到上方列底下時，上方列換成 surfaceContainer 色。
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    const trimmed = query.trim();
     const load = () =>
-      store.listNotes().then((notes) => setList({ notes, loadedAt: Date.now() }));
+      store
+        .listNotes(trimmed)
+        .then((notes) => setList({ notes, query: trimmed, loadedAt: Date.now() }));
     void load();
     return store.subscribe(load);
-  }, [store]);
+  }, [store, query]);
 
   function openNote(id: string) {
     router.push({ pathname: '/notes/[id]', params: { id } });
@@ -45,17 +57,33 @@ export function NoteList() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.surface }]}>
-      <Host matchContents={{ vertical: true }} ignoreSafeAreaKeyboardInsets style={styles.bar}>
-        <TopAppBar colors={{ containerColor: scrolled ? colors.surfaceContainer : colors.surface }}>
-          <TopAppBar.Title>
-            <ComposeText style={{ typography: 'titleLarge' }}>筆記</ComposeText>
-          </TopAppBar.Title>
-        </TopAppBar>
-      </Host>
+      <View
+        style={[
+          styles.bar,
+          {
+            paddingTop: insets.top + 8,
+            backgroundColor: scrolled ? colors.surfaceContainer : colors.surface,
+          },
+        ]}
+      >
+        <Host matchContents={{ vertical: true }} ignoreSafeAreaKeyboardInsets style={styles.search}>
+          <DockedSearchBar onQueryChange={setQuery} modifiers={[fillMaxWidth()]}>
+            <DockedSearchBar.LeadingIcon>
+              <Icon source={SearchIcon} tint={colors.onSurfaceVariant} />
+            </DockedSearchBar.LeadingIcon>
+            <DockedSearchBar.Placeholder>
+              <ComposeText>搜尋筆記</ComposeText>
+            </DockedSearchBar.Placeholder>
+          </DockedSearchBar>
+        </Host>
+        {/* ⋮ 選單（回收桶、設定）的位置，等 #6、#13 有功能再放按鈕。 */}
+        <View style={styles.menuSlot} />
+      </View>
       {list && (
         <FlatList
           data={list.notes}
           keyExtractor={(note) => note.id}
+          keyboardShouldPersistTaps="handled"
           onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 0)}
           contentContainerStyle={[
             { paddingBottom: insets.bottom + 88 },
@@ -67,12 +95,18 @@ export function NoteList() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Host matchContents>
-                <Icon source={NoteStackIcon} size={48} tint={colors.onSurfaceVariant} />
+                <Icon
+                  source={list.query ? SearchOffIcon : NoteStackIcon}
+                  size={48}
+                  tint={colors.onSurfaceVariant}
+                />
               </Host>
               <Text
                 style={[typography.bodyLarge, styles.emptyText, { color: colors.onSurfaceVariant }]}
               >
-                還沒有筆記。按右下角的「＋」開始寫。
+                {list.query
+                  ? `找不到含有『${list.query}』的筆記`
+                  : '還沒有筆記。按右下角的「＋」開始寫。'}
               </Text>
             </View>
           }
@@ -121,7 +155,15 @@ export function NoteList() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  bar: { width: '100%' },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  search: { flex: 1 },
+  menuSlot: { width: 48, height: 48 },
   emptyContainer: { flexGrow: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 32 },
   emptyText: { textAlign: 'center' },

@@ -7,6 +7,7 @@ colors:
   onPrimaryContainer: "#4F378B"
   surface: "#FEF7FF"
   surfaceContainer: "#F3EDF7"
+  surfaceContainerHigh: "#ECE6F0"
   onSurface: "#1D1B20"
   onSurfaceVariant: "#49454F"
   outlineVariant: "#CAC4D0"
@@ -15,6 +16,7 @@ colors:
   onPrimaryContainer-dark: "#EADDFF"
   surface-dark: "#141218"
   surfaceContainer-dark: "#211F26"
+  surfaceContainerHigh-dark: "#2B2930"
   onSurface-dark: "#E6E0E9"
   onSurfaceVariant-dark: "#CAC4D0"
   outlineVariant-dark: "#49454F"
@@ -56,8 +58,13 @@ components:
   top-app-bar:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.onSurface}"
-    typography: "{typography.titleLarge}"
     height: "64px"
+  search-bar:
+    backgroundColor: "{colors.surfaceContainerHigh}"
+    textColor: "{colors.onSurfaceVariant}"
+    typography: "{typography.bodyLarge}"
+    height: "56px"
+    padding: "8px 16px"
   top-app-bar-scrolled:
     backgroundColor: "{colors.surfaceContainer}"
     textColor: "{colors.onSurface}"
@@ -122,7 +129,8 @@ components:
 ### Neutral
 - **Surface**：所有畫面的底色，也是列表項目、編輯區、上方列靜止時的底色。`_layout.tsx` 用 `SystemUI.setBackgroundColorAsync(colors.surface)` 把視窗底色也設成它，轉場和鍵盤動畫時不會露出白底；`root-stack.tsx` 的 `contentStyle` 也用它。
 - **Surface Container**：清單捲動後上方列換成這個顏色，用色調表示「內容在上方列底下」。
-- **On Surface**：筆記標題、編輯內文、上方列標題。也是列表 ripple 的顏色（`onSurface` 加 10% 不透明度，`'1a'`，等於 M3 pressed state layer）。
+- **Surface Container High**：列表頁搜尋列本身的底色，是 Compose `DockedSearchBar` 的預設值，程式沒有另外指定。
+- **On Surface**：筆記標題、編輯內文。也是列表 ripple 的顏色（`onSurface` 加 10% 不透明度，`'1a'`，等於 M3 pressed state layer）。
 - **On Surface Variant**：次要文字，包含預覽、時間、「已儲存・HH:MM」、空狀態說明文字與圖示、輸入框 placeholder。
 - **Outline Variant**：列表項目之間的分隔線。
 
@@ -139,7 +147,7 @@ components:
 **Character:** 完全交給系統字體，跟其他系統 APP 一樣。字級照 M3 的角色命名，Android 上 `fontSize` 就是 sp，會跟著系統字體大小縮放。frontmatter 為了工具相容寫成 px，在 Android 上請一律讀作 sp（字級）和 dp（間距）。
 
 ### Hierarchy
-- **titleLarge**（400，22/28）：列表頁上方列的「筆記」。這是 Compose `TopAppBar` 內建的字級，透過 `ComposeText style={{ typography: 'titleLarge' }}` 指定。
+- **titleLarge**（400，22/28）：目前沒有畫面使用。列表頁原本的上方列標題「筆記」已經被搜尋列（#4）取代。
 - **titleMedium**（600，16/24）：列表項目的筆記標題，只顯示一行。
 - **bodyLarge**（400，16/24）：編輯頁內文、空狀態說明文字。
 - **bodyMedium**（400，14/20）：列表項目的內文預覽，最多兩行，超過用「…」截斷。
@@ -158,6 +166,7 @@ components:
 
 - **左右邊距 16dp**：列表項目、分隔線兩端、編輯內文、「已儲存」工具列都對齊同一條 16dp 線。
 - **列表項目**：上下 12dp、左右 16dp，最小高度 56dp。標題和時間在同一行、對齊基線，中間至少 16dp；預覽在標題下方 4dp。
+- **搜尋列**：左右 16dp、上 8dp（再加上 `insets.top`）、下 8dp；右邊和 ⋮ 的位置（48×48dp）之間 4dp。
 - **FAB**：距離右邊和底部各 16dp（再加上系統 inset）。清單底部預留 `insets.bottom + 88` 的空間（56dp FAB + 上下各 16dp），讓最後一則筆記可以捲到 FAB 上方。
 - **編輯頁**：輸入區佔滿上方列和工具列之間的空間，上 8dp、下 16dp。工具列最小高度 48dp，內容靠右。工具列下方的空間取 `max(鍵盤高度, insets.bottom)`，透過 `react-native-keyboard-controller` 逐格跟著鍵盤移動。
 - **空狀態**：垂直置中，左右 32dp，圖示和文字之間 16dp。
@@ -181,14 +190,15 @@ components:
 
 ## Components
 
-所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；搜尋（#4）、置頂（#5）、回收桶與選單（#6、#13）、附圖（#7）之後會在這套系統上擴充。
+所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；置頂（#5）、回收桶與選單（#6、#13）、附圖（#7）之後會在這套系統上擴充。
 
 ### Buttons
 - **FAB（新增筆記）**：Compose `FloatingActionButton`，56dp、16dp 圓角，`primaryContainer` 底色配 `onPrimaryContainer` 的 Material Symbols `add` 圖示，`contentDescription="新增筆記"`。按下後直接建立筆記並進入編輯頁。全 APP 只有這一個主要動作。
 - **IconButton（返回）**：Compose `IconButton` 加 Material Symbols `arrow_back`，`contentDescription="返回"`，放在上方列的 NavigationIcon 位置。
 
 ### Navigation
-- **上方列（Small TopAppBar）**：Compose `TopAppBar`，64dp 高。列表頁的標題是「筆記」（titleLarge），捲動後底色從 `surface` 換成 `surfaceContainer`。編輯頁沒有標題，只有返回鍵。
+- **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。右邊保留 48×48dp 給 ⋮ 選單（回收桶、設定），#6、#13 有功能時再放按鈕。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
+- **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題，只有返回鍵。
 - **轉場**：native stack 的 `animation: 'default'`，也就是 Android 系統的畫面轉場，返回手勢會預覽上一頁（`predictiveBackGestureEnabled: true`）。系統關閉動畫時（`useReducedMotion()`）改用 `'none'` 直接切換。列表項目展開成編輯頁的 container transform 是原本規劃的招牌轉場，但 Reanimated 的 shared element transition 在實機上整個畫面空白，所以延到 #17。
 
 ### 筆記列表項目
@@ -205,6 +215,7 @@ components:
 
 ### 空狀態
 - 垂直置中：Material Symbols `note_stack` 圖示（48dp、`onSurfaceVariant`），下方是 bodyLarge 的說明文字「還沒有筆記。按右下角的「＋」開始寫。」，同樣用 `onSurfaceVariant`。
+- 搜尋沒有結果：同樣的版面，圖示換成 `search_off`，說明文字是「找不到含有『…』的筆記」（…是去掉前後空白的搜尋字串）。
 
 ### 啟動畫面
 - `expo-splash-screen`：淺色底 `#FEF7FF` 配 `#49454F` 的 `note_stack` 圖示，深色底 `#141218` 配 `#CAC4D0` 的圖示，`imageWidth: 76`。這個圖示是暫用的，正式 logo 和 launcher icon 由 #18 處理。splash 底色是固定的 baseline surface，進到 APP 後換成動態配色的 surface，交接時會有輕微的色調和亮度落差；這是已知、可接受的偏差。
@@ -214,7 +225,7 @@ components:
 ### Do:
 - **Do** 所有顏色都透過 `useMaterialColors()` 的色彩角色取用；只有 `app.json` 的 splash 用 baseline 固定色。
 - **Do** React Native 文字從 `src/theme/typography.ts` 取字級；Compose 元件用 Compose 內建的字級名稱。
-- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、FloatingActionButton、IconButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
+- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、DockedSearchBar、FloatingActionButton、IconButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
 - **Do** 圖示一律用 `@expo/material-symbols/*.xml`，一般 24dp，空狀態插圖 48dp。
 - **Do** 左右邊距一律 16dp，觸控目標至少 48×48dp。
 - **Do** 用色調變化表示層次（上方列捲動時 `surface` → `surfaceContainer`）。

@@ -71,6 +71,51 @@ describe('筆記庫', () => {
     expect(await reopened.getNote(note.id)).toMatchObject({ body: '不會不見' });
   });
 
+  describe('搜尋', () => {
+    async function storeWith(...bodies: string[]) {
+      const { store, db } = await createTestNoteStore();
+      const notes = [];
+      for (const body of bodies) {
+        const note = await store.createNote();
+        notes.push(await store.updateBody(note.id, body));
+      }
+      return { store, db, notes };
+    }
+
+    it('同時比對標題和內文：只記得內容裡的一個詞也找得到', async () => {
+      const { store } = await storeWith('購物清單\n牛奶、雞蛋', '牛奶糖食譜', '週末爬山');
+
+      const titles = (await store.listNotes('牛奶')).map((n) => n.title);
+
+      expect(titles.sort()).toEqual(['牛奶糖食譜', '購物清單']);
+    });
+
+    it('不分大小寫', async () => {
+      const { store } = await storeWith('買 iPhone 充電線', '讀 IPHONE 說明書', 'Android 設定');
+
+      const titles = (await store.listNotes('iphone')).map((n) => n.title);
+
+      expect(titles.sort()).toEqual(['讀 IPHONE 說明書', '買 iPhone 充電線']);
+    });
+
+    it('不搜尋回收桶裡的筆記', async () => {
+      const { store, db, notes } = await storeWith('留著的牛奶', '刪掉的牛奶');
+      // 還沒有移到回收桶的操作（#6），直接標記 deleted_at 模擬。
+      await db.run('UPDATE notes SET deleted_at = ? WHERE id = ?', [Date.now(), notes[1].id]);
+
+      const titles = (await store.listNotes('牛奶')).map((n) => n.title);
+
+      expect(titles).toEqual(['留著的牛奶']);
+    });
+
+    it('清掉搜尋字串（或只剩空白）就列出全部筆記', async () => {
+      const { store } = await storeWith('一', '二');
+
+      expect(await store.listNotes('')).toHaveLength(2);
+      expect(await store.listNotes('  ')).toHaveLength(2);
+    });
+  });
+
   describe('離開編輯時捨棄空白筆記', () => {
     it.each([
       ['什麼都沒寫', ''],

@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-21T00:00:00Z",
+  "title": "Design System: 筆記",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Baseline 紫（Primary）", "canonical": "#6750A4", "note": "執行期為 Material You 動態色；hex 是 M3 baseline 備援。", "tonalRamp": ["#21005D", "#381E72", "#4F378B", "#6750A4", "#7F67BE", "#9A82DB", "#D0BCFF", "#EADDFF"] },
+      "primaryContainer": { "role": "primary", "displayName": "淡紫容器（Primary Container）", "canonical": "#EADDFF", "tonalRamp": ["#21005D", "#381E72", "#4F378B", "#6750A4", "#7F67BE", "#9A82DB", "#D0BCFF", "#EADDFF"] },
+      "onPrimaryContainer": { "role": "primary", "displayName": "深紫容器文字（On Primary Container）", "canonical": "#4F378B", "tonalRamp": ["#21005D", "#381E72", "#4F378B", "#6750A4", "#7F67BE", "#9A82DB", "#D0BCFF", "#EADDFF"] },
+      "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#FEF7FF", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
+      "surfaceContainer": { "role": "neutral", "displayName": "Surface Container", "canonical": "#F3EDF7", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
+      "onSurface": { "role": "neutral", "displayName": "On Surface", "canonical": "#1D1B20", "tonalRamp": ["#141218", "#1D1B20", "#322F35", "#48464C", "#79767D", "#CAC5CD", "#E6E0E9", "#FEF7FF"] },
+      "onSurfaceVariant": { "role": "neutral", "displayName": "On Surface Variant", "canonical": "#49454F", "tonalRamp": ["#1D1A22", "#322F37", "#49454F", "#605D66", "#79747E", "#938F99", "#CAC4D0", "#E7E0EC"] },
+      "outlineVariant": { "role": "neutral", "displayName": "Outline Variant", "canonical": "#CAC4D0", "tonalRamp": ["#1D1A22", "#322F37", "#49454F", "#605D66", "#79747E", "#938F99", "#CAC4D0", "#E7E0EC"] },
+      "primary-dark": { "role": "primary", "displayName": "Primary（深色）", "canonical": "#D0BCFF" },
+      "primaryContainer-dark": { "role": "primary", "displayName": "Primary Container（深色）", "canonical": "#4F378B" },
+      "onPrimaryContainer-dark": { "role": "primary", "displayName": "On Primary Container（深色）", "canonical": "#EADDFF" },
+      "surface-dark": { "role": "neutral", "displayName": "Surface（深色）", "canonical": "#141218" },
+      "surfaceContainer-dark": { "role": "neutral", "displayName": "Surface Container（深色）", "canonical": "#211F26" },
+      "onSurface-dark": { "role": "neutral", "displayName": "On Surface（深色）", "canonical": "#E6E0E9" },
+      "onSurfaceVariant-dark": { "role": "neutral", "displayName": "On Surface Variant（深色）", "canonical": "#CAC4D0" },
+      "outlineVariant-dark": { "role": "neutral", "displayName": "Outline Variant（深色）", "canonical": "#49454F" }
+    },
+    "typographyMeta": {
+      "titleLarge": { "displayName": "Title Large", "purpose": "列表頁上方列標題「筆記」；Compose TopAppBar 內建字級。單位 sp。" },
+      "titleMedium": { "displayName": "Title Medium", "purpose": "列表項目的筆記標題，一行。字重 600 是刻意偏離 M3 的 500（Samsung 中文字體沒有 Medium）。" },
+      "bodyLarge": { "displayName": "Body Large", "purpose": "編輯頁內文、空狀態說明。" },
+      "bodyMedium": { "displayName": "Body Medium", "purpose": "列表項目內文預覽，最多兩行。" },
+      "bodySmall": { "displayName": "Body Small", "purpose": "列表修改時間、「已儲存・HH:MM」。" }
+    },
+    "shadows": [
+      { "name": "fab-default", "value": "0 3px 6px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.12)", "purpose": "近似 Compose FloatingActionButton 的預設 elevation（M3 level 3，6dp），只用在 FAB。" }
+    ],
+    "motion": [
+      { "name": "screen-transition", "value": "native-stack animation: 'default'", "purpose": "Android 系統畫面轉場，跟著預測返回預覽上一頁。" },
+      { "name": "screen-transition-reduced", "value": "native-stack animation: 'none'", "purpose": "系統關閉動畫（useReducedMotion）時直接切換。" },
+      { "name": "top-app-bar-scroll", "value": "containerColor: surface -> surfaceContainer when contentOffset.y > 0", "purpose": "M3 上方列捲動狀態，以色調表示內容在底下。" },
+      { "name": "keyboard-follow", "value": "react-native-keyboard-controller useReanimatedKeyboardAnimation, height = max(keyboard, insets.bottom)", "purpose": "「已儲存」工具列逐格跟著鍵盤移動。" },
+      { "name": "ripple", "value": "android_ripple onSurface @ 10% ('1a')", "purpose": "列表項目按下回饋，等於 M3 pressed state layer。" }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Top App Bar（列表）",
+      "kind": "nav",
+      "refersTo": "top-app-bar",
+      "description": "Small TopAppBar，標題「筆記」titleLarge；捲動後換成 surfaceContainer。",
+      "html": "<div class=\"ds-topbar\" tabindex=\"0\"><span class=\"ds-topbar-title\">筆記</span></div>",
+      "css": ".ds-topbar { display: flex; align-items: center; height: 64px; padding: 0 16px; background: #FEF7FF; color: #1D1B20; transition: background 0.2s; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-topbar-title { font-size: 22px; line-height: 28px; font-weight: 400; } .ds-topbar:hover, .ds-topbar:focus-visible { background: #F3EDF7; outline: none; }"
+    },
+    {
+      "name": "Top App Bar（編輯）",
+      "kind": "nav",
+      "refersTo": "top-app-bar",
+      "description": "只有返回 IconButton（Material Symbols arrow_back），沒有標題。",
+      "html": "<div class=\"ds-topbar-edit\"><button class=\"ds-iconbtn\" aria-label=\"返回\"><svg width=\"24\" height=\"24\" viewBox=\"0 -960 960 960\" fill=\"currentColor\"><path d=\"m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z\"/></svg></button></div>",
+      "css": ".ds-topbar-edit { display: flex; align-items: center; height: 64px; padding: 0 4px; background: #FEF7FF; } .ds-iconbtn { width: 48px; height: 48px; display: grid; place-items: center; border: none; border-radius: 50%; background: transparent; color: #49454F; cursor: pointer; transition: background 0.15s; } .ds-iconbtn:hover { background: rgba(29,27,32,0.08); } .ds-iconbtn:focus-visible { background: rgba(29,27,32,0.10); outline: none; } .ds-iconbtn:active { background: rgba(29,27,32,0.10); }"
+    },
+    {
+      "name": "筆記列表項目",
+      "kind": "custom",
+      "refersTo": "note-list-item",
+      "description": "標題一行＋時間靠右，預覽兩行；內縮分隔線。",
+      "html": "<div class=\"ds-list\"><div class=\"ds-item\" tabindex=\"0\"><div class=\"ds-item-head\"><span class=\"ds-item-title\">購物清單</span><span class=\"ds-item-time\">16:17</span></div><div class=\"ds-item-preview\">牛奶、雞蛋、衛生紙、貓砂（大包）、洗碗精、明天早餐的吐司</div></div><div class=\"ds-divider\"></div><div class=\"ds-item\" tabindex=\"0\"><div class=\"ds-item-head\"><span class=\"ds-item-title\">停車位 B2-117</span><span class=\"ds-item-time\">11月12日</span></div></div></div>",
+      "css": ".ds-list { background: #FEF7FF; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-item { padding: 12px 16px; min-height: 56px; display: flex; flex-direction: column; justify-content: center; cursor: pointer; transition: background 0.15s; } .ds-item:hover { background: rgba(29,27,32,0.08); } .ds-item:focus-visible, .ds-item:active { background: rgba(29,27,32,0.10); outline: none; } .ds-item-head { display: flex; align-items: baseline; gap: 16px; } .ds-item-title { flex: 1; font-size: 16px; line-height: 24px; font-weight: 600; color: #1D1B20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-item-time { font-size: 12px; line-height: 16px; color: #49454F; } .ds-item-preview { margin-top: 4px; font-size: 14px; line-height: 20px; color: #49454F; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .ds-divider { height: 1px; margin: 0 16px; background: #CAC4D0; }"
+    },
+    {
+      "name": "FAB（新增筆記）",
+      "kind": "button",
+      "refersTo": "fab",
+      "description": "Compose FloatingActionButton，primaryContainer、16dp 圓角、Material Symbols add。",
+      "html": "<button class=\"ds-fab\" aria-label=\"新增筆記\"><svg width=\"24\" height=\"24\" viewBox=\"0 -960 960 960\" fill=\"currentColor\"><path d=\"M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z\"/></svg></button>",
+      "css": ".ds-fab { width: 56px; height: 56px; display: grid; place-items: center; border: none; border-radius: 16px; background: #EADDFF; color: #4F378B; box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.15s, box-shadow 0.15s; } .ds-fab:hover { background: #DCCDF2; box-shadow: 0 4px 8px rgba(0,0,0,0.18), 0 3px 6px rgba(0,0,0,0.12); } .ds-fab:focus-visible { background: #D7C7EE; outline: none; } .ds-fab:active { background: #D7C7EE; }"
+    },
+    {
+      "name": "編輯內文與「已儲存」工具列",
+      "kind": "input",
+      "refersTo": "editor-body",
+      "description": "無邊框全幅輸入區；鍵盤上方靠右的「已儲存・HH:MM」。",
+      "html": "<div class=\"ds-editor\"><textarea class=\"ds-editor-input\" placeholder=\"筆記\">購物清單\n牛奶、雞蛋、衛生紙</textarea><div class=\"ds-savebar\">已儲存・16:17</div></div>",
+      "css": ".ds-editor { display: flex; flex-direction: column; background: #FEF7FF; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-editor-input { min-height: 160px; padding: 8px 16px 16px; border: none; background: transparent; resize: none; font: inherit; font-size: 16px; line-height: 24px; color: #1D1B20; caret-color: #6750A4; } .ds-editor-input::placeholder { color: #49454F; } .ds-editor-input::selection { background: rgba(103,80,164,0.4); } .ds-editor-input:focus-visible { outline: none; } .ds-savebar { min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: flex-end; font-size: 12px; line-height: 16px; color: #49454F; }"
+    },
+    {
+      "name": "空狀態",
+      "kind": "custom",
+      "refersTo": "empty-state",
+      "description": "note_stack 圖示 48dp onSurfaceVariant＋bodyLarge 說明文字，垂直置中。",
+      "html": "<div class=\"ds-empty\"><svg width=\"48\" height=\"48\" viewBox=\"0 -960 960 960\" fill=\"currentColor\"><path d=\"M280-160v-441q0-33 24-56t57-23h439q33 0 56.5 23.5T880-600v320L680-80H360q-33 0-56.5-23.5T280-160ZM81-710q-6-33 13-59.5t52-32.5l434-77q33-6 59.5 13t32.5 52l10 54h-82l-7-40-433 77 40 226v279q-16-9-27.5-24T158-276L81-710Zm279 110v440h280v-160h160v-280H360Zm220 220Z\"/></svg><p class=\"ds-empty-text\">還沒有筆記。按右下角的「＋」開始寫。</p></div>",
+      "css": ".ds-empty { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 48px 32px; background: #FEF7FF; color: #49454F; font-family: system-ui, Roboto, 'Noto Sans TC', sans-serif; } .ds-empty-text { margin: 0; text-align: center; font-size: 16px; line-height: 24px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "系統內建的筆記本",
+    "overview": "這套系統是把 Material 3 照規矩做好，不額外加風格。打開 APP 看到的應該像 Android 本來就附的工具，跟 Google Keep、Files、Android「設定」放在一起不會顯得突兀：一張安靜的全寬清單、一個 FAB、一條上方列。沒有品牌色塊、沒有自創元件，也沒有任何裝飾層。介面的個性來自使用者的桌布（Material You 動態配色），APP 本身不帶顏色主張。\n\n密度跟 M3 清單一樣：一列一則筆記，標題一行、預覽兩行、時間靠右，列與列之間用內縮的分隔線。編輯頁只有返回鍵和一整片輸入區，「已儲存・HH:MM」貼在鍵盤上方，提醒使用者不用自己存檔。所有元件都是 Jetpack Compose 原生元件（透過 `@expo/ui/jetpack-compose`）或照 M3 規格排的 React Native 文字，轉場用 Android 系統的預設動畫。\n\n明確拒絕：卡片瀑布流、品牌色塊、自創元件、底部導覽列、側邊抽屜。",
+    "keyCharacteristics": [
+      "顏色只用 Material You 色彩角色，執行期由 `useMaterialColors()` 提供；Android 12 以上跟著桌布變，以下用 M3 baseline 紫色系。",
+      "深色模式跟著系統切換，兩種模式都在實機驗證過。",
+      "系統字體、M3 字級、單位 sp，跟著系統字體大小縮放（實機測過 130%）。",
+      "用色調變化表現層次，不用陰影；唯一的陰影是 Compose FAB 的預設 elevation。",
+      "圖示一律用 Material Symbols（`@expo/material-symbols/*.xml`）。",
+      "轉場、預測返回、ripple 都交給系統處理，不自己做。"
+    ],
+    "rules": [
+      { "name": "The Role-Not-Hex Rule", "body": "畫面程式碼只能透過 `useMaterialColors()` 取用色彩角色，不可以寫死 hex。唯一的例外是 `app.json` 的 splash 設定（`#FEF7FF`／`#141218`）和 splash 圖示（`#49454F`／`#CAC4D0`），因為 splash 在 JS 執行前就要畫出來，只能用 baseline 的 surface 和 onSurfaceVariant 固定色。", "section": "colors" },
+      { "name": "The Wallpaper Owns Color Rule", "body": "APP 不定義自己的品牌色。需要強調時用 M3 既有角色（`primaryContainer` 給主要動作、`primary` 給游標），不要另外加顏色。", "section": "colors" },
+      { "name": "The CJK Weight Rule", "body": "`titleMedium` 用 600，不是 M3 規格的 500。這是刻意的偏離：Samsung 等機型的中文系統字體沒有 Medium，500 會讓中文退回一般粗細、數字和英文卻是 Medium，同一行粗細不一致。新增其他 500 字重的角色時，也要套用同樣的處理。", "section": "typography" },
+      { "name": "The No-Tracking Rule", "body": "不加 M3 的 `letterSpacing`。那是為拉丁字母設計的，加在中文上會把字拆散。這同樣是刻意偏離 M3 規格。", "section": "typography" },
+      { "name": "The Tonal Scroll Rule", "body": "表示「有東西在下面」時改變容器色調（`surface` → `surfaceContainer`），不要加陰影。之後的搜尋列、多選模式上方列也照這個方式做。", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** 所有顏色都透過 `useMaterialColors()` 的色彩角色取用；只有 `app.json` 的 splash 用 baseline 固定色。",
+      "**Do** React Native 文字從 `src/theme/typography.ts` 取字級；Compose 元件用 Compose 內建的字級名稱。",
+      "**Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、FloatingActionButton、IconButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。",
+      "**Do** 圖示一律用 `@expo/material-symbols/*.xml`，一般 24dp，空狀態插圖 48dp。",
+      "**Do** 左右邊距一律 16dp，觸控目標至少 48×48dp。",
+      "**Do** 用色調變化表示層次（上方列捲動時 `surface` → `surfaceContainer`）。",
+      "**Do** 轉場交給 Android 系統（`animation: 'default'`），系統關閉動畫時用 `'none'`。",
+      "**Do** 每個新畫面都在淺色、深色和 130% 字體大小下實機檢查。"
+    ],
+    "donts": [
+      "**Don't** 在畫面程式碼裡寫死 hex，也不要加 M3 色彩角色以外的品牌色。",
+      "**Don't** 把列表做成卡片瀑布流；筆記列表是全寬清單加內縮分隔線。",
+      "**Don't** 加底部導覽列或側邊抽屜。",
+      "**Don't** 自創元件或 M3 motion 規格以外的轉場；列表到編輯頁的 container transform（#17）屬於 M3 規格，做好後取代目前的系統轉場。",
+      "**Don't** 在中文文字上加 `letterSpacing`。",
+      "**Don't** 在中文標題用 500 字重（Samsung 的中文字體沒有 Medium），改用 600。",
+      "**Don't** 用陰影區分列表項目或上方列；陰影只有 FAB 預設的那一層。"
+    ]
+  }
+}

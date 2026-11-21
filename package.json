@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~58.0.29",
     "expo": "~58.0.26",
     "expo-constants": "~58.0.16",
@@ -19,6 +20,7 @@
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-gesture-handler": "~3.3.0",
+    "react-native-keyboard-controller": "1.22.7",
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.11.1",
     "react-native-screens": "~4.30.1",
@@ -48,6 +50,9 @@
     "preset": "jest-expo/android",
     "setupFiles": [
       "<rootDir>/jest.setup.ts"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^react-native-reanimated/mock$": "<rootDir>/src/test-utils/reanimated-mock.ts"
+    }
   }
 }

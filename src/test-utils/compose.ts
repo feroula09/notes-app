@@ -1,21 +1,27 @@
 import { act, screen, waitFor } from 'expo-router/testing-library';
 
 /**
- * 按下 @expo/ui（Jetpack Compose）的按鈕。
+ * 找到 @expo/ui（Jetpack Compose）的控制項。
  *
  * Compose 元件在 Jest 裡只是 native view mock，RNTL 的 role 查詢和 press 都找不到它們；
- * 這裡用圖示的 contentDescription（也就是 TalkBack 唸出來的名稱）找到按鈕，再觸發它的點擊事件。
+ * 這裡用圖示的 contentDescription（也就是 TalkBack 唸出來的名稱）找到圖示，
+ * 再往上找到帶有 handler 這個事件的控制項。
  */
-export async function pressComposeButton(label: string) {
+async function findComposeControl(label: string, handler: string) {
   const icon = await waitFor(() => {
     const [match] = screen.container.queryAll((node) => node.props.contentDescription === label);
     if (!match) throw new Error(`找不到 contentDescription 為「${label}」的 Compose 元件`);
     return match;
   });
-  let button = icon.parent;
-  while (button && typeof button.props.onButtonPressed !== 'function') button = button.parent;
-  if (!button) throw new Error(`「${label}」不在可以按的 Compose 按鈕裡`);
-  const onButtonPressed = button.props.onButtonPressed;
+  let control = icon.parent;
+  while (control && typeof control.props[handler] !== 'function') control = control.parent;
+  if (!control) throw new Error(`「${label}」不在有 ${handler} 的 Compose 控制項裡`);
+  return control;
+}
+
+/** 按下 Compose 按鈕（IconButton、FloatingActionButton…）。 */
+export async function pressComposeButton(label: string) {
+  const { onButtonPressed } = (await findComposeControl(label, 'onButtonPressed')).props;
   await act(async () => {
     await onButtonPressed();
   });
@@ -40,4 +46,17 @@ export async function typeInComposeSearchBar(placeholder: string, text: string) 
   await act(async () => {
     await onQueryChange({ nativeEvent: { value: text } });
   });
+}
+
+/** 切換 Compose 的 toggle 按鈕（IconToggleButton…），和實機上點一下相同。 */
+export async function toggleComposeButton(label: string) {
+  const { onCheckedChange, checked } = (await findComposeControl(label, 'onCheckedChange')).props;
+  await act(async () => {
+    await onCheckedChange({ nativeEvent: { checked: !checked } });
+  });
+}
+
+/** Compose toggle 按鈕目前是否為開啟（TalkBack 唸出的開關狀態）。 */
+export async function isComposeToggleChecked(label: string): Promise<boolean> {
+  return (await findComposeControl(label, 'onCheckedChange')).props.checked;
 }

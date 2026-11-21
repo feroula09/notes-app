@@ -31,6 +31,11 @@ typography:
     fontSize: "16px"
     fontWeight: 600
     lineHeight: "24px"
+  titleSmall:
+    fontFamily: "system-ui, Roboto, 'Noto Sans TC', sans-serif"
+    fontSize: "14px"
+    fontWeight: 600
+    lineHeight: "20px"
   bodyLarge:
     fontFamily: "system-ui, Roboto, 'Noto Sans TC', sans-serif"
     fontSize: "16px"
@@ -74,6 +79,10 @@ components:
     typography: "{typography.titleMedium}"
     padding: "12px 16px"
     height: "56px"
+  note-list-section-header:
+    textColor: "{colors.primary}"
+    typography: "{typography.titleSmall}"
+    padding: "16px 16px 8px"
   note-list-divider:
     backgroundColor: "{colors.outlineVariant}"
     height: "1px"
@@ -106,7 +115,7 @@ components:
 
 這套系統是把 Material 3 照規矩做好，不額外加風格。打開 APP 看到的應該像 Android 本來就附的工具，跟 Google Keep、Files、Android「設定」放在一起不會顯得突兀：一張安靜的全寬清單、一個 FAB、一條上方列。沒有品牌色塊、沒有自創元件，也沒有任何裝飾層。介面的個性來自使用者的桌布（Material You 動態配色），APP 本身不帶顏色主張。
 
-密度跟 M3 清單一樣：一列一則筆記，標題一行、預覽兩行、時間靠右，列與列之間用內縮的分隔線。編輯頁只有返回鍵和一整片輸入區，「已儲存・HH:MM」貼在鍵盤上方，提醒使用者不用自己存檔。所有元件都是 Jetpack Compose 原生元件（透過 `@expo/ui/jetpack-compose`）或照 M3 規格排的 React Native 文字，轉場用 Android 系統的預設動畫。
+密度跟 M3 清單一樣：一列一則筆記，標題一行、預覽兩行、時間靠右，列與列之間用內縮的分隔線。編輯頁只有返回鍵、置頂鍵和一整片輸入區，「已儲存・HH:MM」貼在鍵盤上方，提醒使用者不用自己存檔。所有元件都是 Jetpack Compose 原生元件（透過 `@expo/ui/jetpack-compose`）或照 M3 規格排的 React Native 文字，轉場用 Android 系統的預設動畫。
 
 明確拒絕：卡片瀑布流、品牌色塊、自創元件、底部導覽列、側邊抽屜。
 
@@ -115,7 +124,7 @@ components:
 - 深色模式跟著系統切換，兩種模式都在實機驗證過。
 - 系統字體、M3 字級、單位 sp，跟著系統字體大小縮放（實機測過 130%）。
 - 用色調變化表現層次，不用陰影；唯一的陰影是 Compose FAB 的預設 elevation。
-- 圖示一律用 Material Symbols（`@expo/material-symbols/*.xml`）。
+- 圖示一律用 Material Symbols（`@expo/material-symbols/*.xml`）；需要實心版本時才放在 `src/icons/`（見 Do's and Don'ts）。
 - 轉場、預測返回、ripple 都交給系統處理，不自己做。
 
 ## Colors
@@ -123,8 +132,8 @@ components:
 整套配色就是 Material You 的色彩角色，下面的 hex 是 M3 baseline 靜態配色（Android 12 以下的備援，也是 splash 用的固定色）；在 Android 12 以上，實際顏色由桌布產生，截圖裡看到的偏藍灰色就是這樣來的。
 
 ### Primary
-- **Baseline 紫（Primary）**：只用在輸入游標（`cursorColor`）和選取反白（`primary` 加 40% 不透明度，`'66'`）。畫面上幾乎看不到它，這是刻意的。
-- **淡紫容器（Primary Container）** 與 **深紫容器文字（On Primary Container）**：FAB 的底色和圖示色，是 Compose `FloatingActionButton` 的預設配色，程式沒有覆寫。全畫面只有 FAB 帶有明顯的色彩。
+- **Baseline 紫（Primary）**：用在輸入游標（`cursorColor`）、選取反白（`primary` 加 40% 不透明度，`'66'`）、列表的區塊標題「已置頂」「其他」，以及置頂中的置頂鍵（Compose `IconToggleButton` 預設的 checked 色）。用量刻意壓得很少。
+- **淡紫容器（Primary Container）** 與 **深紫容器文字（On Primary Container）**：FAB 的底色和圖示色，是 Compose `FloatingActionButton` 的預設配色，程式沒有覆寫。全畫面只有 FAB 是大面積的色塊；`primary` 只出現在文字和小圖示上。
 
 ### Neutral
 - **Surface**：所有畫面的底色，也是列表項目、編輯區、上方列靜止時的底色。`_layout.tsx` 用 `SystemUI.setBackgroundColorAsync(colors.surface)` 把視窗底色也設成它，轉場和鍵盤動畫時不會露出白底；`root-stack.tsx` 的 `contentStyle` 也用它。
@@ -137,7 +146,7 @@ components:
 ### Named Rules
 **The Role-Not-Hex Rule.** 畫面程式碼只能透過 `useMaterialColors()` 取用色彩角色，不可以寫死 hex。唯一的例外是 `app.json` 的 splash 設定（`#FEF7FF`／`#141218`）和 splash 圖示（`#49454F`／`#CAC4D0`），因為 splash 在 JS 執行前就要畫出來，只能用 baseline 的 surface 和 onSurfaceVariant 固定色。
 
-**The Wallpaper Owns Color Rule.** APP 不定義自己的品牌色。需要強調時用 M3 既有角色（`primaryContainer` 給主要動作、`primary` 給游標），不要另外加顏色。
+**The Wallpaper Owns Color Rule.** APP 不定義自己的品牌色。需要強調時用 M3 既有角色（`primaryContainer` 給主要動作、`primary` 給游標、區塊標題和開啟中的切換鍵），不要另外加顏色。
 
 ## Typography
 
@@ -149,14 +158,15 @@ components:
 ### Hierarchy
 - **titleLarge**（400，22/28）：目前沒有畫面使用。列表頁原本的上方列標題「筆記」已經被搜尋列（#4）取代。
 - **titleMedium**（600，16/24）：列表項目的筆記標題，只顯示一行。
+- **titleSmall**（600，14/20）：列表的區塊標題「已置頂」「其他」。和 titleMedium 一樣用 600 而不是 M3 的 500（Samsung 中文字體沒有 Medium）。
 - **bodyLarge**（400，16/24）：編輯頁內文、空狀態說明文字。
 - **bodyMedium**（400，14/20）：列表項目的內文預覽，最多兩行，超過用「…」截斷。
 - **bodySmall**（400，12/16）：列表項目的修改時間（靠右）、編輯頁的「已儲存・HH:MM」。
 
-除了 titleLarge 由 Compose 提供，其他四個角色定義在 `src/theme/typography.ts`，React Native 文字一律從那裡取用。
+除了 titleLarge 由 Compose 提供，其他五個角色定義在 `src/theme/typography.ts`，React Native 文字一律從那裡取用。
 
 ### Named Rules
-**The CJK Weight Rule.** `titleMedium` 用 600，不是 M3 規格的 500。這是刻意的偏離：Samsung 等機型的中文系統字體沒有 Medium，500 會讓中文退回一般粗細、數字和英文卻是 Medium，同一行粗細不一致。新增其他 500 字重的角色時，也要套用同樣的處理。
+**The CJK Weight Rule.** `titleMedium` 和 `titleSmall` 用 600，不是 M3 規格的 500。這是刻意的偏離：Samsung 等機型的中文系統字體沒有 Medium，500 會讓中文退回一般粗細、數字和英文卻是 Medium，同一行粗細不一致。新增其他 500 字重的角色時，也要套用同樣的處理。
 
 **The No-Tracking Rule.** 不加 M3 的 `letterSpacing`。那是為拉丁字母設計的，加在中文上會把字拆散。這同樣是刻意偏離 M3 規格。
 
@@ -170,7 +180,7 @@ components:
 - **FAB**：距離右邊和底部各 16dp（再加上系統 inset）。清單底部預留 `insets.bottom + 88` 的空間（56dp FAB + 上下各 16dp），讓最後一則筆記可以捲到 FAB 上方。
 - **編輯頁**：輸入區佔滿上方列和工具列之間的空間，上 8dp、下 16dp。工具列最小高度 48dp，內容靠右。工具列下方的空間取 `max(鍵盤高度, insets.bottom)`，透過 `react-native-keyboard-controller` 逐格跟著鍵盤移動。
 - **空狀態**：垂直置中，左右 32dp，圖示和文字之間 16dp。
-- **觸控目標**至少 48×48dp（IconButton、FAB、列表項目都符合）。
+- **觸控目標**至少 48×48dp（IconButton、IconToggleButton、FAB、列表項目都符合）。
 
 間距只用 4、8、12、16、32 這幾個值。
 
@@ -190,22 +200,24 @@ components:
 
 ## Components
 
-所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；置頂（#5）、回收桶與選單（#6、#13）、附圖（#7）之後會在這套系統上擴充。
+所有元件都是 Compose 原生元件或照 M3 規格排的 React Native 文字。目前只做了已經能用的部分；回收桶與選單（#6、#13）、附圖（#7）之後會在這套系統上擴充。
 
 ### Buttons
 - **FAB（新增筆記）**：Compose `FloatingActionButton`，56dp、16dp 圓角，`primaryContainer` 底色配 `onPrimaryContainer` 的 Material Symbols `add` 圖示，`contentDescription="新增筆記"`。按下後直接建立筆記並進入編輯頁。全 APP 只有這一個主要動作。
 - **IconButton（返回）**：Compose `IconButton` 加 Material Symbols `arrow_back`，`contentDescription="返回"`，放在上方列的 NavigationIcon 位置。
+- **IconToggleButton（置頂）**：編輯頁上方列 Actions 位置的 Compose `IconToggleButton`。沒置頂時是空心的 `keep`、`onSurfaceVariant`；置頂時換成實心的 `keep`（`src/icons/keep_fill.xml`），顏色是預設的 checked 色 `primary`。`contentDescription` 固定是「置頂」，開關狀態由 TalkBack 唸出。筆記載入完才出現。
 
 ### Navigation
 - **搜尋列（列表頁）**：Compose `DockedSearchBar`，常駐在列表上方，取代原本的「筆記」上方列。左邊是 Material Symbols `search` 圖示，placeholder「搜尋筆記」，邊打字邊篩選（`onQueryChange`）。有文字時右邊出現 `close` 清除鍵（`contentDescription="清除搜尋"`），按下去清空搜尋字串。`@expo/ui` 原本沒有這個 slot，是 `patches/@expo+ui+58.0.29.patch` 加的；因為改了 Kotlin，`package.json` 的 `expo.autolinking.android.buildFromSource` 要包含 `expo-ui`，Gradle 才會從原始碼編譯，而不是用預先編好的 AAR。右邊保留 48×48dp 給 ⋮ 選單（回收桶、設定），#6、#13 有功能時再放按鈕。清單捲動後，搜尋列後面的底色從 `surface` 換成 `surfaceContainer`。搜尋沒有結果時的空狀態見下方「空狀態」。
-- **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題，只有返回鍵。
+- **上方列（Small TopAppBar，編輯頁）**：Compose `TopAppBar`，64dp 高，沒有標題；左邊是返回鍵，右邊是置頂鍵。
 - **轉場**：native stack 的 `animation: 'default'`，也就是 Android 系統的畫面轉場，返回手勢會預覽上一頁（`predictiveBackGestureEnabled: true`）。系統關閉動畫時（`useReducedMotion()`）改用 `'none'` 直接切換。列表項目展開成編輯頁的 container transform 是原本規劃的招牌轉場，但 Reanimated 的 shared element transition 在實機上整個畫面空白，所以延到 #17。
 
 ### 筆記列表項目
 - **結構**：第一行是標題（titleMedium、`onSurface`、一行）和修改時間（bodySmall、`onSurfaceVariant`、靠右）；下面是預覽（bodyMedium、`onSurfaceVariant`、最多兩行）。沒有內文時不顯示預覽，項目高度縮成一行。
 - **時間格式**：今天顯示 `HH:MM`，今年其他天顯示「11月20日」，更早顯示含年份的日期。
 - **按下**：Android 原生 ripple，`onSurface` 10%。
-- **分隔線**：1dp、`outlineVariant`、左右內縮 16dp。
+- **分隔線**：1dp、`outlineVariant`、左右內縮 16dp。只在同一區的項目之間出現，區塊標題上下不加。
+- **區塊**：有置頂筆記時，列表分成「已置頂」和「其他」兩區（React Native `SectionList`），區塊標題是 titleSmall、`primary`，上 16dp、左右 16dp、下 8dp，`accessibilityRole="header"`。沒有置頂筆記時只有一區，不顯示標題；所有筆記都置頂時也不顯示「其他」。兩區內各自依最後修改時間排序，搜尋時也照樣分區。
 
 ### Inputs / Fields
 - **編輯內文**：React Native `TextInput`（multiline），沒有邊框也沒有底色，就是一整片 `surface`。文字 bodyLarge、`onSurface`；placeholder「筆記」用 `onSurfaceVariant`；游標用 `primary`，選取反白是 `primary` 40%。空白筆記進入時自動聚焦。
@@ -225,8 +237,8 @@ components:
 ### Do:
 - **Do** 所有顏色都透過 `useMaterialColors()` 的色彩角色取用；只有 `app.json` 的 splash 用 baseline 固定色。
 - **Do** React Native 文字從 `src/theme/typography.ts` 取字級；Compose 元件用 Compose 內建的字級名稱。
-- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、DockedSearchBar、FloatingActionButton、IconButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
-- **Do** 圖示一律用 `@expo/material-symbols/*.xml`，一般 24dp，空狀態插圖 48dp。
+- **Do** 優先用 `@expo/ui/jetpack-compose` 的原生元件（TopAppBar、DockedSearchBar、FloatingActionButton、IconButton、IconToggleButton、Icon），沒有對應元件時才用 React Native 照 M3 規格排版。
+- **Do** 圖示一律用 `@expo/material-symbols/*.xml`，一般 24dp，空狀態插圖 48dp。套件只附空心版本；需要實心版本表示「開啟中」時，用 `npx add-material-symbols --fill <名稱>` 下載到 `src/icons/`（目前只有 `keep_fill.xml`）。
 - **Do** 左右邊距一律 16dp，觸控目標至少 48×48dp。
 - **Do** 用色調變化表示層次（上方列捲動時 `surface` → `surfaceContainer`）。
 - **Do** 轉場交給 Android 系統（`animation: 'default'`），系統關閉動畫時用 `'none'`。
